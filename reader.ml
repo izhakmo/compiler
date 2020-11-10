@@ -103,6 +103,25 @@ let _tokenize_visible_char x = match x with
   | _ -> raise X_not_yet_implemented;;
 
 
+
+(* yuval added *)
+
+let make_paired nt_left nt_right nt =
+let nt = caten nt_left nt in
+let nt = pack nt (function (_, e) -> e) in
+let nt = caten nt nt_right in
+let nt = pack nt (function (e, _) -> e) in
+nt;;
+
+let make_spaced nt =
+make_paired nt_whitespaces nt_whitespaces nt;;
+
+let tok_lparen = make_spaced ( char '(');;
+
+let tok_rparen = make_spaced ( char ')');;
+
+
+
 let read_sexprs string = raise X_not_yet_implemented;;
   
 end;; (* struct Reader *)
