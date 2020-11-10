@@ -120,7 +120,6 @@ let tok_lparen = make_spaced ( char '(');;
 
 let tok_rparen = make_spaced ( char ')');;
 
-let push check;;
 
 
 let read_sexprs string = raise X_not_yet_implemented;;
