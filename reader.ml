@@ -1,5 +1,6 @@
 
 #use "pc.ml";;
+open PC;;
 
 exception X_not_yet_implemented;;
 exception X_this_should_not_happen;;
@@ -41,22 +42,25 @@ let normalize_scheme_symbol str =
   else Printf.sprintf "|%s|" str;;
 
 
-(* if we find # ==> we need to check for a boolean insensative or char*))
+(* if we find # ==> we need to check for a boolean insensative or char*)
 
-let _#_ = (char '#');;
+let _hash_ = (char '#');;
 
 let _boolOrBackSlash x = match x with
-    | 'f' -> Bool(false)
-    | 't' -> Bool(true)
-    | _ -> raise X_not_yet_implemented;;
+  | 'f' -> Bool(false)
+  | 't' -> Bool(true)
+  | _ -> raise X_not_yet_implemented;;
+
+
+
 
 let digit = range '0' '9';; 
 
 (* TODO ADD SIGN plux or minus before*)
 
-let tok_num_=
+(*let tok_num_=
   let digits= plus digit in 
-  pack digits(fun (ds) -> Num (int_of_string(list_to_string ds)));;
+  pack digits (fun (ds) -> Num(int_of_string(list_to_string ds)));;*)
 
 
 
@@ -65,43 +69,44 @@ let _tokenize_num x = match x with
   | '.' -> String("TODO float")
   | _ -> String("TODO FRAC divided by 1");;
 
-  let dot = '.';; 
+let dot = '.';; 
 
 
 let lowerCase = range 'a' 'z';;
 let upperCase = range 'A' 'Z';;
-let punctuation = 
+(* let punctuation = 
   | '!' | '$' | '^' | '*' | '-' | '_' 
-  | '=' | '+' | '<' | '>' | '/' | '?';;
+  | '=' | '+' | '<' | '>' | '/' | '?';; *)
 
-let dots = '.' | ',';;
+(* let dots = '.' | ',';; *)
 
 (*let _symbolToken = *)
 
 (* let string_meta_char = '\' | '"' | 't' | 'f' | 'n' | 'r'; *)
 
 let _tokenize_meta_char x = match x with 
-  | '\\' -> Char(char '\\') 
-  | '\"' -> Char(char '\"')
-  | '\t' -> Char(char '\t')
-  | '\f' -> Char(char '\f')
-  | '\n' -> Char(char '\n')
-  | '\r' -> Char(char '\r')
+  | '\\' -> Char('\\') 
+  | '\"' -> Char('\"')
+  | '\t' -> Char('\t')
+  | '\012' -> Char('\012')   (*\f*)
+  | '\n' -> Char('\n')
+  | '\r' -> Char('\r')
   | _ -> raise X_not_yet_implemented;;
 
 let _tokenize_named_char x = match x with
-  | "nul" -> Char(0) 
-  | "newline" -> Char(10) 
-  | "return" -> Char(13) 
-  | "tab" -> Char(9) 
-  | "formfeed" -> Char(12) 
-  | "space" -> Char(32)
-  | _ -> (_tokenize_visible_char x);;
+  | "#\nul" -> Char('\000') 
+  | "#\newline" -> Char('\010') 
+  | "#\return" -> Char('\013') 
+  | "#\tab" -> Char('\009') 
+  | "#\formfeed" -> Char('\012') 
+  | "#\space" -> Char('\032');;
+  (*| _ -> (_tokenize_visible_char x);;
 
-let _tokenize_visible_char x = match x with
-  | char(c) and (c > 32) -> Char(char x)
+
+let _tokenize_visible_char c = match x with
+  | Char(c) && (c > '\032') -> Char(x)
   | _ -> raise X_not_yet_implemented;;
-
+*)
 
 
 (* yuval added *)
@@ -112,6 +117,8 @@ let nt = pack nt (function (_, e) -> e) in
 let nt = caten nt nt_right in
 let nt = pack nt (function (e, _) -> e) in
 nt;;
+
+let nt_whitespaces = star nt_whitespace;;
 
 let make_spaced nt =
 make_paired nt_whitespaces nt_whitespaces nt;;
