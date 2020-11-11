@@ -33,9 +33,11 @@ let rec sexpr_eq s1 s2 =
 module Reader: sig
   val read_sexprs : string -> sexpr list
   val hash : char list -> char * char list
-  val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val nt_whitespaces : char list -> char list * char list
+  val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
+  val boolOrBackSlash : char -> sexpr
+  val nt_boolean : char list -> sexpr * char list
 
 
 (*)  val boolOrBackSlash : char -> sexpr*)
@@ -55,15 +57,17 @@ let hash = (char '#');;
 let t = (char 't');;
 let f = (char 'f');;
 
-(*
-let boolOrBackSlash (x , rest) = match x with
-  | f-> Bool(false)
-  | t-> Bool(true)
-  | _ -> raise X_not_yet_implemented;;*)
+
+let boolOrBackSlash x  = match x with
+  | 'f'-> Bool(false)
+  | 'F'-> Bool(false)
+  | 't'-> Bool(true)
+  | 'T'-> Bool(true)
+  | _ -> raise X_not_yet_implemented;;
 
 let nt_boolean = 
-  let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
-  pack bool_token (fun (hash, t_or_f) -> Bool(bool_of_string (t_or_f)));;
+  let bool_token = caten hash (disj (char_ci 't') (char_ci 'f')) in 
+  pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
 
 (*let nt_boolean = caten hash boolOrBackSlash;;*)
 
