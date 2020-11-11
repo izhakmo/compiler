@@ -32,6 +32,13 @@ let rec sexpr_eq s1 s2 =
 
 module Reader: sig
   val read_sexprs : string -> sexpr list
+  val hash : char list -> char * char list
+  val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
+  val nt_whitespaces : char list -> char list * char list
+  val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
+
+
+(*)  val boolOrBackSlash : char -> sexpr*)
 end
 = struct
 let normalize_scheme_symbol str =
@@ -44,15 +51,21 @@ let normalize_scheme_symbol str =
 
 (* if we find # ==> we need to check for a boolean insensative or char*)
 
-let _hash_ = (char '#');;
+let hash = (char '#');;
+let t = (char 't');;
+let f = (char 'f');;
 
-let _boolOrBackSlash x = match x with
-  | 'f' -> Bool(false)
-  | 't' -> Bool(true)
-  | _ -> raise X_not_yet_implemented;;
+(*
+let boolOrBackSlash (x , rest) = match x with
+  | f-> Bool(false)
+  | t-> Bool(true)
+  | _ -> raise X_not_yet_implemented;;*)
 
+let nt_boolean = 
+  let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
+  pack bool_token (fun (hash, t_or_f) -> Bool(bool_of_string (t_or_f)));;
 
-
+(*let nt_boolean = caten hash boolOrBackSlash;;*)
 
 let digit = range '0' '9';; 
 
@@ -93,6 +106,7 @@ let _tokenize_meta_char x = match x with
   | '\r' -> Char('\r')
   | _ -> raise X_not_yet_implemented;;
 
+(*
 let _tokenize_named_char x = match x with
   | "#\nul" -> Char('\000') 
   | "#\newline" -> Char('\010') 
@@ -100,7 +114,7 @@ let _tokenize_named_char x = match x with
   | "#\tab" -> Char('\009') 
   | "#\formfeed" -> Char('\012') 
   | "#\space" -> Char('\032');;
-  (*| _ -> (_tokenize_visible_char x);;
+  | _ -> (_tokenize_visible_char x);;
 
 
 let _tokenize_visible_char c = match x with
@@ -109,7 +123,7 @@ let _tokenize_visible_char c = match x with
 *)
 
 
-(* yuval added *)
+
 
 let make_paired nt_left nt_right nt =
 let nt = caten nt_left nt in
@@ -130,5 +144,9 @@ let tok_rparen = make_spaced ( char ')');;
 
 
 let read_sexprs string = raise X_not_yet_implemented;;
-  
+
+
+ 
 end;; (* struct Reader *)
+open Reader;; 
+
