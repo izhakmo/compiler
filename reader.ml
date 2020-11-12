@@ -50,8 +50,8 @@ module Reader: sig
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val sign : char list -> char * char list
-  (* val gen_integer : char option * char list -> sexpr *)
-  (* val nt_integer : char list -> sexpr * char list *)
+  val gen_integer : char option * char list -> sexpr
+  val nt_integer : char list -> sexpr * char list
   
 
 
@@ -126,12 +126,12 @@ let gen_integer (l, tl) = match l with
 (* let a = (caten nt_integer (caten dot natural));; *)
 
 
-let gen_float hd = match two with 
+(* let gen_float hd = match two with 
     | Some('.') -> 
     let dd = (natural rest) in Number(Float(float_of_string (String.concat (list_to_string one) [".";(list_to_string dd)] )))
     | _ -> raise X_no_match;;
 
-let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
+let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);; *)
 
 (* .concat('.').concat(list_to_string x) *)
 (*
