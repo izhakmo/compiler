@@ -1,9 +1,4 @@
 
-
-
-
-
-
 #use "pc.ml";;
 open PC;;
 
@@ -63,8 +58,8 @@ module Reader: sig
 
   val nt_int_integer : char list -> sexpr * char list
   val nt_number : char list -> sexpr * char list 
-  
-(*  val boolOrBackSlash : char -> sexpr*)
+
+
 end
 = struct
 let normalize_scheme_symbol str =
@@ -75,7 +70,7 @@ let normalize_scheme_symbol str =
   else Printf.sprintf "|%s|" str;;
 
 
-(* if we find # ==> we need to check for a boolean insensative or char*)
+
 
 let hash = (char '#');;
 let t = (char 't');;
@@ -92,35 +87,30 @@ let boolOrBackSlash x  = match x with
   | _ -> raise X_not_yet_implemented;;
 
 
-  let make_paired nt_left nt_right nt =
-    let nt = caten nt_left nt in
-    let nt = pack nt (function (_, e) -> e) in
-    let nt = caten nt nt_right in
-    let nt = pack nt (function (e, _) -> e) in
-    nt;;
+let make_paired nt_left nt_right nt =
+  let nt = caten nt_left nt in
+  let nt = pack nt (function (_, e) -> e) in
+  let nt = caten nt nt_right in
+  let nt = pack nt (function (e, _) -> e) in
+  nt;;
 
-  let nt_whitespaces = star nt_whitespace;;
+let nt_whitespaces = star nt_whitespace;;
 
 
-  let make_spaced nt =
-    make_paired nt_whitespaces nt_whitespaces nt;;
+let make_spaced nt =
+  make_paired nt_whitespaces nt_whitespaces nt;;
 
-  let nt_boolean = 
-    let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
-    pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
+let nt_boolean = 
+  let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
+  pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
 
-(*let nt_boolean = caten hash boolOrBackSlash;;*)
+
 
 let digit = range '0' '9';; 
 
 
 let natural = plus digit;;
-(* 
-let gen_integer (l, tl) = match l with
-  | Some('+') -> (int_of_string (list_to_string tl))
-  | Some('-') -> (int_of_string (list_to_string tl)*(-1))
-  | None  -> (int_of_string (list_to_string tl))
-  | _ -> raise X_no_match;; *)
+
 
 
 let gen_integer (l, tl) = match l with
@@ -144,8 +134,18 @@ let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
 
 
 let gen_fraction (l ,(p , tl)) =
+  let 
     Number(Fraction(int_of_string l, (int_of_string (list_to_string tl))));;
-    (* | _ -> Number(Fraction(l,1));; *)
+
+
+
+    int gcd(int a, int b) 
+{ 
+    if (a == 0) 
+        return b; 
+    return gcd(b % a, a); 
+} 
+    
 
 let nt_fraction = (pack (caten nt_integer (caten slash natural)) gen_fraction);;
 
@@ -153,28 +153,9 @@ let nt_int_integer = (pack nt_integer (fun (int_moshe) -> Number(Fraction(int_of
 
 let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
 
-(* .concat('.').concat(list_to_string x) *)
-(*
-((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
-
-(fun ((l, p), r) -> p) *)
-
-(* (pack rest natural) (fun x -> Number(Float(float_of_string (String.concat (list_to_string one) [".";"42"] )))) *)
-
-  (*  
-  test_string integer  "+777 #T  5454 ";;
-- : (char option * char list) * string =  
-((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
-*)
 
 
 
-(*let _tokenize_num hd tl = match tl with
-  | '/' -> let digits = plus digit in pack digits (fun (ds) -> Fraction (int_of_string (list_to_string hd), (list_to_string tl) )) 
-  | '.' -> String("TODO float");;
-  (* | _ -> Fraction (int_of_string (list_to_string ds), 1));; *)
-
-let tok_num = pack natural (fun (hd,tl) -> (_tokenize_num hd tl)) ;;*)
 
 
 
