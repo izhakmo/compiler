@@ -32,6 +32,8 @@ let rec sexpr_eq s1 s2 =
 
 module Reader: sig
   val read_sexprs : string -> sexpr list
+
+  
   val hash : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
@@ -39,8 +41,12 @@ module Reader: sig
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
   val digit : char list -> char * char list
-  val tok_num : char list -> number * char list
+  (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
+  val sign : char list -> char * char list
+  val nt_integer : char option * char list -> sexpr
+  val integer : char list -> sexpr * char list
+  
 
 
 (*  val boolOrBackSlash : char -> sexpr*)
@@ -59,7 +65,7 @@ let normalize_scheme_symbol str =
 let hash = (char '#');;
 let t = (char 't');;
 let f = (char 'f');;
-
+let sign = disj (char '+') (char '-');;
 
 let boolOrBackSlash x  = match x with
   | 'f'-> Bool(false)
@@ -68,9 +74,23 @@ let boolOrBackSlash x  = match x with
   | 'T'-> Bool(true)
   | _ -> raise X_not_yet_implemented;;
 
-let nt_boolean = 
-  let bool_token = caten hash (disj (char_ci 't') (char_ci 'f')) in 
-  pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
+
+  let make_paired nt_left nt_right nt =
+    let nt = caten nt_left nt in
+    let nt = pack nt (function (_, e) -> e) in
+    let nt = caten nt nt_right in
+    let nt = pack nt (function (e, _) -> e) in
+    nt;;
+
+  let nt_whitespaces = star nt_whitespace;;
+
+
+  let make_spaced nt =
+    make_paired nt_whitespaces nt_whitespaces nt;;
+
+  let nt_boolean = 
+    let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
+    pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
 
 (*let nt_boolean = caten hash boolOrBackSlash;;*)
 
@@ -79,16 +99,36 @@ let digit = range '0' '9';;
 
 let natural = plus digit;;
 
+let nt_integer (l, tl) = match l with
+  | Some('+') -> Number(Fraction(int_of_string (list_to_string tl),1))
+  | Some('-') -> Number(Fraction(int_of_string (list_to_string tl)*(-1),1))
+  | None  -> Number(Fraction(int_of_string (list_to_string tl),1))
+  | _ -> raise X_no_match;;
 
+let integer = (pack (caten (maybe sign) natural) nt_integer);;
+
+
+(*
+((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
+
+(fun ((l, p), r) -> p) *)
+
+
+
+  (*  
+  test_string integer  "+777 #T  5454 ";;
+- : (char option * char list) * string =  
+((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
+*)
 
 (* TODO ADD SIGN plux or minus before*)
 
-let _tokenize_num hd tl = match tl with
+(*let _tokenize_num hd tl = match tl with
   | '/' -> let digits = plus digit in pack digits (fun (ds) -> Fraction (int_of_string (list_to_string hd), (list_to_string tl) )) 
   | '.' -> String("TODO float");;
   (* | _ -> Fraction (int_of_string (list_to_string ds), 1));; *)
 
-let tok_num = pack natural (fun (hd,tl) -> (_tokenize_num hd tl)) ;;
+let tok_num = pack natural (fun (hd,tl) -> (_tokenize_num hd tl)) ;;*)
 
 
 let dot = '.';; 
@@ -133,18 +173,6 @@ let _tokenize_visible_char c = match x with
 
 
 
-
-let make_paired nt_left nt_right nt =
-let nt = caten nt_left nt in
-let nt = pack nt (function (_, e) -> e) in
-let nt = caten nt nt_right in
-let nt = pack nt (function (e, _) -> e) in
-nt;;
-
-let nt_whitespaces = star nt_whitespace;;
-
-let make_spaced nt =
-make_paired nt_whitespaces nt_whitespaces nt;;
 
 let tok_lparen = make_spaced ( char '(');;
 
