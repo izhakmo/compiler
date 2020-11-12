@@ -68,7 +68,7 @@ let boolOrBackSlash x  = match x with
   | _ -> raise X_not_yet_implemented;;
 
 let nt_boolean = 
-  let bool_token = caten hash (disj (char_ci 't') (char_ci 'f')) in 
+  let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
   pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
 
 (*let nt_boolean = caten hash boolOrBackSlash;;*)
