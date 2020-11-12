@@ -50,8 +50,8 @@ module Reader: sig
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val sign : char list -> char * char list
-  val gen_integer : char option * char list -> sexpr
-  val nt_integer : char list -> sexpr * char list
+  val gen_integer : char option * char list -> int
+  val nt_integer : char list -> int * char list
   
 
 
@@ -114,9 +114,9 @@ let gen_integer (l, tl) = match l with
 
 
 let gen_integer (l, tl) = match l with
-  | Some('+') -> Number(Fraction(int_of_string (list_to_string tl),1))
-  | Some('-') -> Number(Fraction(int_of_string (list_to_string tl)*(-1),1))
-  | None  -> Number(Fraction(int_of_string (list_to_string tl),1))
+  | Some('+') -> (int_of_string (list_to_string tl))
+  | Some('-') -> (int_of_string (list_to_string tl)*(-1))
+  | None  -> (int_of_string (list_to_string tl))
   | _ -> raise X_no_match;;
 
 
