@@ -51,16 +51,19 @@ module Reader: sig
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val sign : char list -> char * char list
-  val gen_integer : char option * char list -> int
-  val nt_integer : char list -> int * char list
+
+  val gen_integer : char option * char list -> string
+  val nt_integer : char list -> string * char list
   
-  val gen_float : int * (char * char list) -> sexpr 
+  val gen_float : string * (char * char list) -> sexpr 
   val nt_float : char list -> sexpr * char list
 
-  val gen_fraction : int * (char * char list) -> sexpr 
+  val gen_fraction : string * (char * char list) -> sexpr 
   val nt_fraction : char list -> sexpr * char list
 
-
+  val nt_int_integer : char list -> sexpr * char list
+  val nt_number : char list -> sexpr * char list 
+  
 (*  val boolOrBackSlash : char -> sexpr*)
 end
 = struct
@@ -121,17 +124,18 @@ let gen_integer (l, tl) = match l with
 
 
 let gen_integer (l, tl) = match l with
-  | Some('+') -> (int_of_string (list_to_string tl))
-  | Some('-') -> (int_of_string (list_to_string tl)*(-1))
-  | None  -> (int_of_string (list_to_string tl))
+  | Some('+') ->  (list_to_string tl)
+  | Some('-') ->  (String.concat "" ["-";(list_to_string tl)])
+  | None  ->  (list_to_string tl)
   | _ -> raise X_no_match;;
 
 
- let nt_integer = (pack (caten (maybe sign) natural) gen_integer);; 
+let nt_integer = pack (caten (maybe sign) natural) gen_integer;; 
+
 
 
 let gen_float (l ,(p , tl)) = match p with 
-    | '.' -> Number(Float(float_of_string (String.concat (string_of_int l) [".";(list_to_string tl)])))
+    | '.' -> Number(Float(float_of_string (String.concat "" [ l;".";(list_to_string tl)])))
     | _ -> raise X_no_match;;
 
 
@@ -140,12 +144,14 @@ let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
 
 
 let gen_fraction (l ,(p , tl)) =
-    Number(Fraction(l, (int_of_string (list_to_string tl))));;
+    Number(Fraction(int_of_string l, (int_of_string (list_to_string tl))));;
     (* | _ -> Number(Fraction(l,1));; *)
 
 let nt_fraction = (pack (caten nt_integer (caten slash natural)) gen_fraction);;
 
+let nt_int_integer = (pack nt_integer (fun (int_moshe) -> Number(Fraction(int_of_string int_moshe, 1))));;
 
+let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
 
 (* .concat('.').concat(list_to_string x) *)
 (*
