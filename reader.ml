@@ -39,10 +39,11 @@ module Reader: sig
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
   val digit : char list -> char * char list
-  val tok_num_ : char list -> number * char list
+  val tok_num : char list -> number * char list
+  val natural : char list -> char list * char list
 
 
-(*)  val boolOrBackSlash : char -> sexpr*)
+(*  val boolOrBackSlash : char -> sexpr*)
 end
 = struct
 let normalize_scheme_symbol str =
@@ -75,18 +76,20 @@ let nt_boolean =
 
 let digit = range '0' '9';; 
 
-let tok_num_ =
-  let digits = plus digit in
-  pack digits (fun (ds) -> Fraction (int_of_string (list_to_string ds), 1));;
+
+let natural = plus digit;;
+
+
 
 (* TODO ADD SIGN plux or minus before*)
 
+let _tokenize_num hd tl = match tl with
+  | '/' -> let digits = plus digit in pack digits (fun (ds) -> Fraction (int_of_string (list_to_string hd), (list_to_string tl) )) 
+  | '.' -> String("TODO float");;
+  (* | _ -> Fraction (int_of_string (list_to_string ds), 1));; *)
 
+let tok_num = pack natural (fun (hd,tl) -> (_tokenize_num hd tl)) ;;
 
-let _tokenize_num x = match x with
-  | '/' -> String("TODO FRAC and denominator")
-  | '.' -> String("TODO float")
-  | _ -> String("TODO FRAC divided by 1");;
 
 let dot = '.';; 
 
