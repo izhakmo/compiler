@@ -1,4 +1,9 @@
 
+
+
+
+
+
 #use "pc.ml";;
 open PC;;
 
@@ -35,6 +40,7 @@ module Reader: sig
 
   
   val hash : char list -> char * char list
+  val dot : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
@@ -44,8 +50,8 @@ module Reader: sig
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val sign : char list -> char * char list
-  val nt_integer : char option * char list -> sexpr
-  val integer : char list -> sexpr * char list
+  (* val gen_integer : char option * char list -> sexpr *)
+  (* val nt_integer : char list -> sexpr * char list *)
   
 
 
@@ -66,6 +72,7 @@ let hash = (char '#');;
 let t = (char 't');;
 let f = (char 'f');;
 let sign = disj (char '+') (char '-');;
+let dot = (char '.');;
 
 let boolOrBackSlash x  = match x with
   | 'f'-> Bool(false)
@@ -98,22 +105,41 @@ let digit = range '0' '9';;
 
 
 let natural = plus digit;;
+(* 
+let gen_integer (l, tl) = match l with
+  | Some('+') -> (int_of_string (list_to_string tl))
+  | Some('-') -> (int_of_string (list_to_string tl)*(-1))
+  | None  -> (int_of_string (list_to_string tl))
+  | _ -> raise X_no_match;; *)
 
-let nt_integer (l, tl) = match l with
+
+let gen_integer (l, tl) = match l with
   | Some('+') -> Number(Fraction(int_of_string (list_to_string tl),1))
   | Some('-') -> Number(Fraction(int_of_string (list_to_string tl)*(-1),1))
   | None  -> Number(Fraction(int_of_string (list_to_string tl),1))
   | _ -> raise X_no_match;;
 
-let integer = (pack (caten (maybe sign) natural) nt_integer);;
+
+ let nt_integer = (pack (caten (maybe sign) natural) gen_integer);; 
 
 
+(* let a = (caten nt_integer (caten dot natural));; *)
+
+
+let gen_float hd = match two with 
+    | Some('.') -> 
+    let dd = (natural rest) in Number(Float(float_of_string (String.concat (list_to_string one) [".";(list_to_string dd)] )))
+    | _ -> raise X_no_match;;
+
+let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
+
+(* .concat('.').concat(list_to_string x) *)
 (*
 ((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
 
 (fun ((l, p), r) -> p) *)
 
-
+(* (pack rest natural) (fun x -> Number(Float(float_of_string (String.concat (list_to_string one) [".";"42"] )))) *)
 
   (*  
   test_string integer  "+777 #T  5454 ";;
@@ -130,8 +156,6 @@ let integer = (pack (caten (maybe sign) natural) nt_integer);;
 
 let tok_num = pack natural (fun (hd,tl) -> (_tokenize_num hd tl)) ;;*)
 
-
-let dot = '.';; 
 
 
 let lowerCase = range 'a' 'z';;
