@@ -59,6 +59,12 @@ module Reader: sig
   val nt_int_integer : char list -> sexpr * char list
   val nt_number : char list -> sexpr * char list 
 
+  val lowerCase : char list -> char * char list 
+  val upperCase : char list -> char * char list 
+  val nt_SymbolCharNoDot : char list -> char * char list 
+  val nt_SymbolChar : char list -> char * char list 
+
+  (* val nt_Symbol : char list -> char * char list *)
 
 end
 = struct
@@ -157,14 +163,24 @@ let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
 
 
 
-
-
-
 let lowerCase = range 'a' 'z';;
 let upperCase = range 'A' 'Z';;
-(* let punctuation = 
-  | '!' | '$' | '^' | '*' | '-' | '_' 
-  | '=' | '+' | '<' | '>' | '/' | '?';; *)
+ 
+let nt_SymbolCharNoDot = disj_list [digit; lowerCase; upperCase; make_one_of char "!$^*-_=+<>/?:"];;
+
+let nt_SymbolChar = disj nt_SymbolCharNoDot dot;;
+
+let nt_Symbol =disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es))) pack (caten nt_SymbolChar nt_epsilon) (fun (e, es) -> (e :: es));;
+
+
+(* let a = (caten nt_SymbolChar (plus nt_SymbolChar));; *)
+(* val a : char list -> (char * char list) * char list = <fun>   *)
+
+(* # let b = plus nt_SymbolChar;; *)
+(* val b : char list -> char list * char list = <fun>   *)
+
+(* let c = (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)));; *)
+(* val c : char list -> char list * char list = <fun>  *)
 
 (* let dots = '.' | ',';; *)
 
