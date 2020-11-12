@@ -38,6 +38,8 @@ module Reader: sig
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
+  val digit : char list -> char * char list
+  val tok_num_ : char list -> number * char list
 
 
 (*)  val boolOrBackSlash : char -> sexpr*)
@@ -73,11 +75,11 @@ let nt_boolean =
 
 let digit = range '0' '9';; 
 
-(* TODO ADD SIGN plux or minus before*)
+let tok_num_ =
+  let digits = plus digit in
+  pack digits (fun (ds) -> Fraction (int_of_string (list_to_string ds), 1));;
 
-(*let tok_num_=
-  let digits= plus digit in 
-  pack digits (fun (ds) -> Num(int_of_string(list_to_string ds)));;*)
+(* TODO ADD SIGN plux or minus before*)
 
 
 
@@ -154,3 +156,4 @@ let read_sexprs string = raise X_not_yet_implemented;;
 end;; (* struct Reader *)
 open Reader;; 
 
+(* test_string nt_boolean "#T";; *)
