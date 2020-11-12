@@ -41,6 +41,7 @@ module Reader: sig
   
   val hash : char list -> char * char list
   val dot : char list -> char * char list
+  val slash : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
@@ -53,6 +54,11 @@ module Reader: sig
   val gen_integer : char option * char list -> int
   val nt_integer : char list -> int * char list
   
+  val gen_float : int * (char * char list) -> sexpr 
+  val nt_float : char list -> sexpr * char list
+
+  val gen_fraction : int * (char * char list) -> sexpr 
+  val nt_fraction : char list -> sexpr * char list
 
 
 (*  val boolOrBackSlash : char -> sexpr*)
@@ -73,6 +79,7 @@ let t = (char 't');;
 let f = (char 'f');;
 let sign = disj (char '+') (char '-');;
 let dot = (char '.');;
+let slash = (char '/');;
 
 let boolOrBackSlash x  = match x with
   | 'f'-> Bool(false)
@@ -123,15 +130,22 @@ let gen_integer (l, tl) = match l with
  let nt_integer = (pack (caten (maybe sign) natural) gen_integer);; 
 
 
-(* let a = (caten nt_integer (caten dot natural));; *)
-
-
-(* let gen_float hd = match two with 
-    | Some('.') -> 
-    let dd = (natural rest) in Number(Float(float_of_string (String.concat (list_to_string one) [".";(list_to_string dd)] )))
+let gen_float (l ,(p , tl)) = match p with 
+    | '.' -> Number(Float(float_of_string (String.concat (string_of_int l) [".";(list_to_string tl)])))
     | _ -> raise X_no_match;;
 
-let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);; *)
+
+
+let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
+
+
+let gen_fraction (l ,(p , tl)) =
+    Number(Fraction(l, (int_of_string (list_to_string tl))));;
+    (* | _ -> Number(Fraction(l,1));; *)
+
+let nt_fraction = (pack (caten nt_integer (caten slash natural)) gen_fraction);;
+
+
 
 (* .concat('.').concat(list_to_string x) *)
 (*
@@ -147,7 +161,7 @@ let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);; *)
 ((Some '+', ['7'; '7'; '7']), "->[ #T  5454 ]")              
 *)
 
-(* TODO ADD SIGN plux or minus before*)
+
 
 (*let _tokenize_num hd tl = match tl with
   | '/' -> let digits = plus digit in pack digits (fun (ds) -> Fraction (int_of_string (list_to_string hd), (list_to_string tl) )) 
