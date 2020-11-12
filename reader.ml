@@ -64,8 +64,7 @@ module Reader: sig
   val nt_SymbolCharNoDot : char list -> char * char list 
   val nt_SymbolChar : char list -> char * char list 
 
-  (* val nt_Symbol : char list -> char * char list *)
-
+  val nt_Symbol : char list -> sexpr * char list 
 end
 = struct
 let normalize_scheme_symbol str =
@@ -170,7 +169,10 @@ let nt_SymbolCharNoDot = disj_list [digit; lowerCase; upperCase; make_one_of cha
 
 let nt_SymbolChar = disj nt_SymbolCharNoDot dot;;
 
-let nt_Symbol =disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es))) pack (caten nt_SymbolChar nt_epsilon) (fun (e, es) -> (e :: es));;
+let nt_Symbol = (pack
+  (disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)))
+  (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))))
+  (fun (hd)-> Symbol(list_to_string hd)));;
 
 
 (* let a = (caten nt_SymbolChar (plus nt_SymbolChar));; *)
