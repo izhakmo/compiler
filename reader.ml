@@ -134,17 +134,18 @@ let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
 
 
 let gen_fraction (l ,(p , tl)) =
-  let 
-    Number(Fraction(int_of_string l, (int_of_string (list_to_string tl))));;
+  let numerator = (int_of_string l) in
+  let denominator = (int_of_string (list_to_string tl)) in
+  let rec gcd a b = 
+    if (a == 0)
+      then b
+      else gcd (b mod a) a
+  in
+  let ans = (gcd numerator denominator) in 
+  let ans_without_sign = 
+    if (ans > 0) then ans else ans * (-1) in
+  Number(Fraction(numerator/ ans_without_sign, denominator/ans_without_sign));;
 
-
-
-    int gcd(int a, int b) 
-{ 
-    if (a == 0) 
-        return b; 
-    return gcd(b % a, a); 
-} 
     
 
 let nt_fraction = (pack (caten nt_integer (caten slash natural)) gen_fraction);;
