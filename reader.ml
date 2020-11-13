@@ -82,6 +82,11 @@ module Reader: sig
   val nt_char : char list -> sexpr * char list 
 
 
+  val tok_lparen : char list -> char * char list 
+  val tok_rparen : char list -> char * char list 
+  val nt_nil : char list -> sexpr * char list 
+
+  
 end
 = struct
 let normalize_scheme_symbol str =
@@ -251,7 +256,7 @@ let nt_char =
     let char_token = (caten prefixed_char (disj namedChar visibleSimpleChar)) in 
     pack char_token (fun (prefixed, tokenized) -> (Char (tokenized)));;
 
-(* nuL ascii *)
+(* #;( #; (#; (#; moshe) hagever) q) *)
 
 
 
@@ -259,6 +264,14 @@ let nt_char =
 let tok_lparen = make_spaced ( char '(');;
 
 let tok_rparen = make_spaced ( char ')');;
+
+let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil ));;
+(* comments inside instead of epsilon *)
+
+
+
+
+
 
 
 
