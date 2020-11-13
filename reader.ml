@@ -238,8 +238,6 @@ let namedChar_match x = match x with
 
 
 (* This code parse the ocaml language and not scheme language *)
-let
-
 let namedChar = (pack (disj_list [word_ci "nul"; word_ci "newline"; word_ci "return"; word_ci "tab"; word_ci "formfeed"; word_ci "space"]) 
                              (fun (hd)-> (namedChar_match (list_to_string hd))));;
 
@@ -254,9 +252,7 @@ let nt_char =
     pack char_token (fun (fixed, tokenized) -> (Char (tokenized)));;
 
 
-(* from feed
-K
-Cap *)
+
 
 
 let tok_lparen = make_spaced ( char '(');;
