@@ -65,6 +65,23 @@ module Reader: sig
   val nt_SymbolChar : char list -> char * char list 
 
   val nt_Symbol : char list -> sexpr * char list 
+
+  
+  val string_meta_char_match : string -> char 
+  val string_meta_char : char list -> char * char list 
+  val stringLiteralChar : char list -> char * char list 
+  val string_char : char list -> char * char list 
+  val string_char_plus : char list -> sexpr * char list 
+  
+
+  val namedChar_match : string -> char 
+  val namedChar : char list -> char * char list 
+  val string_meta_char : char list -> char * char list 
+  val visibleSimpleChar : char list -> char * char list 
+  val prefixed_char : char list -> char list * char list 
+  val nt_char : char list -> sexpr * char list 
+
+
 end
 = struct
 let normalize_scheme_symbol str =
@@ -165,57 +182,81 @@ let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
 let lowerCase = range 'a' 'z';;
 let upperCase = range 'A' 'Z';;
  
-let nt_SymbolCharNoDot = disj_list [digit; lowerCase; upperCase; make_one_of char "!$^*-_=+<>/?:"];;
+let nt_SymbolCharNoDot = disj_list [digit; lowerCase; (pack upperCase lowercase_ascii); make_one_of char "!$^*-_=+<>/?:"];;
 
 let nt_SymbolChar = disj nt_SymbolCharNoDot dot;;
 
 let nt_Symbol = (pack
-  (disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)))
-  (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))))
-  (fun (hd)-> Symbol(list_to_string hd)));;
+                      (disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)))
+                            (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))))
+                      (fun (hd)-> Symbol(list_to_string hd)));;
 
 
-(* let a = (caten nt_SymbolChar (plus nt_SymbolChar));; *)
-(* val a : char list -> (char * char list) * char list = <fun>   *)
+let string_meta_char_match str = match str with
+  | "\\\\" -> '\092'
+  | "\\\"" -> '\034'
+  | "\\t" -> '\009'
+  | "\\f"  -> '\012'
+  | "\\n"  -> '\010'
+  | "\\r"  -> '\013'
+  | _ -> raise X_no_match;;
 
-(* # let b = plus nt_SymbolChar;; *)
-(* val b : char list -> char list * char list = <fun>   *)
-
-(* let c = (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)));; *)
-(* val c : char list -> char list * char list = <fun>  *)
-
-(* let dots = '.' | ',';; *)
-
-(*let _symbolToken = *)
-
-(* let string_meta_char = '\' | '"' | 't' | 'f' | 'n' | 'r'; *)
-
-let _tokenize_meta_char x = match x with 
-  | '\\' -> Char('\\') 
-  | '\"' -> Char('\"')
-  | '\t' -> Char('\t')
-  | '\012' -> Char('\012')   (*\f*)
-  | '\n' -> Char('\n')
-  | '\r' -> Char('\r')
-  | _ -> raise X_not_yet_implemented;;
-
-(*
-let _tokenize_named_char x = match x with
-  | "#\nul" -> Char('\000') 
-  | "#\newline" -> Char('\010') 
-  | "#\return" -> Char('\013') 
-  | "#\tab" -> Char('\009') 
-  | "#\formfeed" -> Char('\012') 
-  | "#\space" -> Char('\032');;
-  | _ -> (_tokenize_visible_char x);;
+(* This code parse the ocaml language and not scheme language *)
+let string_meta_char = (pack (disj_list [word_ci "\\\\"; word_ci "\\\""; word_ci "\\t"; word_ci "\\f"; word_ci "\\n"; word_ci "\\r"]) 
+                             (fun (hd)-> (string_meta_char_match (list_to_string hd))));;
 
 
-let _tokenize_visible_char c = match x with
-  | Char(c) && (c > '\032') -> Char(x)
-  | _ -> raise X_not_yet_implemented;;
-*)
+let stringLiteralChar = disj_list [(range '\032' '\033'); (range '\035' '\091');(range '\093' '\126')];;
+
+let string_char = disj stringLiteralChar string_meta_char;;
+
+let string_char_plus = (pack (plus string_char) (fun (hd)-> String(list_to_string hd)));;
 
 
+
+
+
+
+let namedChar_match str = match str with
+  | "nul"       -> '\000'
+  | "newline"   -> '\010'
+  | "return"    -> '\013'
+  | "tab"       -> '\009'
+  | "formfeed"  -> '\012'
+  | "space"     -> '\032'
+  | _           -> raise X_no_match;;
+  
+(* 
+let namedChar_match x = match x with
+  | "nul"       -> Char('\000') 
+  | "newline"   -> Char('\010') 
+  | "return"    -> Char('\013') 
+  | "tab"       -> Char('\009') 
+  | "formfeed"  -> Char('\012') 
+  | "space"     -> Char('\032')
+  | _           -> raise X_no_match;; *)
+
+
+(* This code parse the ocaml language and not scheme language *)
+let
+
+let namedChar = (pack (disj_list [word_ci "nul"; word_ci "newline"; word_ci "return"; word_ci "tab"; word_ci "formfeed"; word_ci "space"]) 
+                             (fun (hd)-> (namedChar_match (list_to_string hd))));;
+
+
+let visibleSimpleChar = range '\032' '\126';;
+
+let prefixed_char = (pack (caten hash (char '\\'))  (fun (one, two) -> (one :: [two]))) ;;
+
+
+let nt_char =  
+    let char_token = (caten prefixed_char (disj namedChar visibleSimpleChar)) in 
+    pack char_token (fun (fixed, tokenized) -> (Char (tokenized)));;
+
+
+(* from feed
+K
+Cap *)
 
 
 let tok_lparen = make_spaced ( char '(');;
