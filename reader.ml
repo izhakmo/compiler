@@ -213,7 +213,15 @@ let string_char = disj stringLiteralChar string_meta_char;;
 let string_char_plus = (pack (plus string_char) (fun (hd)-> String(list_to_string hd)));;
 
 
-
+(* 
+let namedChar_match x = match x with
+  | "nul"       -> Char('\000') 
+  | "newline"   -> Char('\010') 
+  | "return"    -> Char('\013') 
+  | "tab"       -> Char('\009') 
+  | "formfeed"  -> Char('\012') 
+  | "space"     -> Char('\032')
+  | _           -> raise X_no_match;; *)
 
 
 
@@ -226,20 +234,12 @@ let namedChar_match str = match str with
   | "space"     -> '\032'
   | _           -> raise X_no_match;;
   
-(* 
-let namedChar_match x = match x with
-  | "nul"       -> Char('\000') 
-  | "newline"   -> Char('\010') 
-  | "return"    -> Char('\013') 
-  | "tab"       -> Char('\009') 
-  | "formfeed"  -> Char('\012') 
-  | "space"     -> Char('\032')
-  | _           -> raise X_no_match;; *)
+
 
 
 (* This code parse the ocaml language and not scheme language *)
 let namedChar = (pack (disj_list [word_ci "nul"; word_ci "newline"; word_ci "return"; word_ci "tab"; word_ci "formfeed"; word_ci "space"]) 
-                             (fun (hd)-> (namedChar_match (list_to_string hd))));;
+                             (fun (hd)-> (namedChar_match (list_to_string (List.map lowercase_ascii hd)))));;
 
 
 let visibleSimpleChar = range '\032' '\126';;
@@ -249,8 +249,9 @@ let prefixed_char = (pack (caten hash (char '\\'))  (fun (one, two) -> (one :: [
 
 let nt_char =  
     let char_token = (caten prefixed_char (disj namedChar visibleSimpleChar)) in 
-    pack char_token (fun (fixed, tokenized) -> (Char (tokenized)));;
+    pack char_token (fun (prefixed, tokenized) -> (Char (tokenized)));;
 
+(* nuL ascii *)
 
 
 
