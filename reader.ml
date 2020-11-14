@@ -90,7 +90,7 @@ module Reader: sig
   
   val nt_sexper_not_pair : char list -> sexpr * char list
   val nt_sexper_plural : char list -> sexpr list * char list
-  val nt_proper_list : char list -> sexpr * char list 
+  (* val nt_proper_list : char list -> sexpr * char list  *)
 
 end
 = struct
@@ -294,6 +294,10 @@ let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Sym
 let nt_sexper_plural = plus nt_sexper_not_pair;;
 
 
+
+
+
+
 (* 
 let rec nt_list = (pack 
                         (make_paired tok_lparen tok_rparen nt_sexper) 
@@ -304,8 +308,31 @@ and nt_pair x = match x with
     | nt_list
     (* | nt_dotted_list *)
 
-and nt_sexper = plus (disj nt_pair nt_sexper_not_pair);;
- *)
+and nt_sexper = plus (disj nt_pair nt_sexper_not_pair);; *)
+
+let rec nt_dotlist lst =
+  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
+            pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr))
+
+  (* let nt_list = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
+            pack nt_dotlist (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr))  *)
+  
+  and _sexpr lst = (pack (plus (disj nt_dotlist nt_sexper_not_pair)) (function (a, s) -> a :: s));;
+
+
+  nt_sexper_not_pair
+  Error: This expression has type char list ->                sexpr * char list
+       but an expression was expected of type
+                                  char list ->                char list -> sexpr * char list
+       Type sexpr * char list is not compatible with type
+         char list -> sexpr * char list 
+
+
+
+
+         Error: This expression has type ('a -> 'b * 'a) -> 'a -> 'b list * 'a
+       but an expression was expected of type ('a -> 'b * 'a) -> 'c * 'd
+       Type 'a -> 'b list * 'a is not compatible with type 'c * 'd 
 
 
 
@@ -314,11 +341,11 @@ and nt_sexper = plus (disj nt_pair nt_sexper_not_pair);;
                            (fun (content) -> List.fold_right (fun e aggr -> Pair(e, aggr)) (List.hd content) (List.tl content) ));; *)
 
 
-                           
+(*                            
 let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) 
 
         (fun (hd::tl) -> List.fold_right (fun e aggr -> Pair(e, aggr)) tl hd));;
-
+ *)
 
 
         
@@ -346,6 +373,14 @@ let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural)
 
  (* let nt_sexper = make_spaced (disj_list [nt_sexper_not_pair ; nt_pair]);; *)
 
+
+(* let nt_pair = 
+  let sexp_list = (make_paired tok_lparen nt_epsilon nt_sexper_plural ) in
+  let paren = (disj tok_lparen tok_rparen) in
+  let res = match (List.hd paren) with 
+  | ')' -> (List.fold_right (fun (hd, tl) ->Pair(hd, tl)))
+  | _ -> Nil;; *)
+  (* | '(' -> nt_pair *)
 
 let read_sexprs string = raise X_not_yet_implemented;;
 
