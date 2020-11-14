@@ -71,8 +71,10 @@ module Reader: sig
   val string_meta_char : char list -> char * char list 
   val stringLiteralChar : char list -> char * char list 
   val string_char : char list -> char * char list 
-  val string_char_plus : char list -> sexpr * char list 
-  
+  (* val string_char_plus : char list -> sexpr * char list  *)
+  val string_char_plus : char list -> char list * char list 
+  val double_qoute : char list -> char * char list
+  val nt_string : char list -> sexpr * char list 
 
   val namedChar_match : string -> char 
   val namedChar : char list -> char * char list 
@@ -85,7 +87,8 @@ module Reader: sig
   val tok_lparen : char list -> char * char list 
   val tok_rparen : char list -> char * char list 
   val nt_nil : char list -> sexpr * char list 
-
+  
+  val nt_sexper_not_pair : char list -> sexpr * char list
   
 end
 = struct
@@ -128,7 +131,7 @@ let make_spaced nt =
   make_paired nt_whitespaces nt_whitespaces nt;;
 
 let nt_boolean = 
-  let bool_token = make_spaced (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
+  let bool_token = (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
   pack bool_token (fun (hash, t_or_f) -> (boolOrBackSlash t_or_f));;
 
 
@@ -215,7 +218,20 @@ let stringLiteralChar = disj_list [(range '\032' '\033'); (range '\035' '\091');
 
 let string_char = disj stringLiteralChar string_meta_char;;
 
-let string_char_plus = (pack (plus string_char) (fun (hd)-> String(list_to_string hd)));;
+let string_char_plus = plus string_char;;
+
+let double_qoute = (char_ci '\"');;
+
+let nt_string = (pack  (make_paired double_qoute double_qoute string_char_plus)   (fun (hd)-> String(list_to_string hd)));;
+
+
+
+
+(* test_string nt_sexper "  \\\"tab\\\"   ";;
+
+
+test_string nt_sexper "\\\"  \\\"" *)
+
 
 
 (* 
@@ -267,12 +283,56 @@ let tok_rparen = make_spaced ( char ')');;
 
 let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil ));;
 (* comments inside instead of epsilon *)
+(* These may enclose whitespaces and comments *)
+
+
+
+let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
+
+let nt_sexper_plural = plus nt_sexper_not_pair;;
+
+
+
+(* let rec nt_list = (pack 
+                        (make_paired tok_lparen tok_rparen nt_sexper) 
+                        (fun (hd,tl)-> List.fold_right (fun e aggr -> Pair(e, aggr)) hd tl)
+                  )                  
+and nt_pair x = match x with
+    | nt_sexper_not_pair
+    | nt_list
+    (* | nt_dotted_list *)
+
+and nt_sexper = plus (disj nt_pair nt_sexper_not_pair);;
+ *)
 
 
 
 
+(* let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) (fun (sexp_list) ->) *)
+
+(* (1) -> Pair (Numer(Fraction(1,1)), Nil) *)
+
+(* improper list is dotted list *)
+
+(* (#T moshe . 3.14 ) -> Pair(Bool (true), 
+                        Pair(Symbol("moshe"),Float(3.14) ) 
+                        )
 
 
+(* proper list is nested pair that ends with nil  *)
+
+(#T moshe 3.14 ) -> Pair(Bool (true), 
+                        Pair(Symbol("moshe"),
+                             Pair(Float(3.14), Nil ) 
+                            )
+                        )
+  
+ *)
+
+
+
+
+ (* let nt_sexper = make_spaced (disj_list [nt_sexper_not_pair ; nt_pair]);; *)
 
 
 let read_sexprs string = raise X_not_yet_implemented;;
