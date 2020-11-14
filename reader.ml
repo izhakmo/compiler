@@ -89,7 +89,9 @@ module Reader: sig
   val nt_nil : char list -> sexpr * char list 
   
   val nt_sexper_not_pair : char list -> sexpr * char list
-  
+  val nt_sexper_plural : char list -> sexpr list * char list
+  val nt_proper_list : char list -> sexpr * char list 
+
 end
 = struct
 let normalize_scheme_symbol str =
@@ -292,8 +294,8 @@ let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Sym
 let nt_sexper_plural = plus nt_sexper_not_pair;;
 
 
-
-(* let rec nt_list = (pack 
+(* 
+let rec nt_list = (pack 
                         (make_paired tok_lparen tok_rparen nt_sexper) 
                         (fun (hd,tl)-> List.fold_right (fun e aggr -> Pair(e, aggr)) hd tl)
                   )                  
@@ -308,8 +310,18 @@ and nt_sexper = plus (disj nt_pair nt_sexper_not_pair);;
 
 
 
-(* let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) (fun (sexp_list) ->) *)
+(* let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) 
+                           (fun (content) -> List.fold_right (fun e aggr -> Pair(e, aggr)) (List.hd content) (List.tl content) ));; *)
 
+
+                           
+let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) 
+
+        (fun (hd::tl) -> List.fold_right (fun e aggr -> Pair(e, aggr)) tl hd));;
+
+
+
+        
 (* (1) -> Pair (Numer(Fraction(1,1)), Nil) *)
 
 (* improper list is dotted list *)
