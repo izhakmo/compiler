@@ -315,7 +315,7 @@ let rec nt_pair lst=
             
 and nt_list_proper lst = 
   let nt_proper_list = caten tok_lparen (caten _sexpr (caten _sexpr tok_rparen)) in 
-                pack nt_propler_list (fun (lp, (car, (cdr, rp)))) -> Pair(car, Pair(cdr, Nil))) lst
+                pack nt_proper_list (fun (lp, (car, (cdr, rp))) -> Pair(car, Pair(cdr, Nil))) lst
                   
                           (* (fun (sexperList)-> List.fold_right (fun (e::aggr) -> Pair(e, aggr)) sexperList)) lst ;; *)
 and dot_and_sexpr lst = 
@@ -324,7 +324,7 @@ and dot_and_sexpr lst =
 
 and nt_list_improper lst = 
         let nt_improper_list = caten tok_lparen (caten _sexpr (caten dot_and_sexpr tok_rparen)) in 
-                  pack nt_propler_list (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr) ) lst
+                  pack nt_improper_list (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr) ) lst
 
 and _sexpr lst= (disj_list [nt_pair; nt_list_proper; nt_list_improper; nt_sexper_not_pair]) lst;;
 
@@ -343,7 +343,7 @@ and _sexpr lst= (disj_list [nt_pair; nt_list_proper; nt_list_improper; nt_sexper
 
 and dot_sexper lst = (disj (caten dot nt_sexper_plus) nt_sexper_plus) lst;; *)
 
-((1 2) . 3) ->Pair (Pair (Number (Int 1), Pair (Number (Int 2), Nil)), Number (Int 3))
+(* ((1 2) . 3) ->Pair (Pair (Number (Int 1), Pair (Number (Int 2), Nil)), Number (Int 3))
 
 
 
@@ -353,7 +353,7 @@ and dot_sexper lst = (disj (caten dot nt_sexper_plus) nt_sexper_plus) lst;; *)
 
 2.(a b c) -> Pair(a, Pair(b,Pair(c ,Nil)))
 
-3. (a b . c) -> Pair(a, Pair(b,c))
+3. (a b . c) -> Pair(a, Pair(b,c)) *)
 
 (* 4.(a . (b c)) -> Pair(a, Pair(b,Pair (c, Nil))) *)
 
