@@ -43,18 +43,24 @@ module Reader: sig
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
   val digit : char list -> char * char list
+
+  val nt_e : char list -> char * char list
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val sign : char list -> char * char list
 
   val gen_integer : char option * char list -> string
   val nt_integer : char list -> string * char list
+
+  val nt_e_exponent : char list -> (char * string) option * char list
   
-  val gen_float : string * (char * char list) -> sexpr 
+  val gen_float : string * ('a * (char list * ('b * string) option)) -> sexpr 
   val nt_float : char list -> sexpr * char list
 
   val gen_fraction : string * (char * char list) -> sexpr 
   val nt_fraction : char list -> sexpr * char list
+
+  val gen_integer_or_float_undotted : string * ('a * string) option -> sexpr
 
   val nt_int_integer : char list -> sexpr * char list
   val nt_number : char list -> sexpr * char list 
@@ -151,6 +157,8 @@ let nt_boolean =
 
 let digit = range '0' '9';; 
 
+let nt_e = (char_ci 'e');;
+
 
 let natural = plus digit;;
 
@@ -165,15 +173,18 @@ let gen_integer (l, tl) = match l with
 
 let nt_integer = pack (caten (maybe sign) natural) gen_integer;; 
 
+let nt_e_exponent = maybe (caten nt_e nt_integer);;
 
 
-let gen_float (l ,(p , tl)) = match p with 
-    | '.' -> Number(Float(float_of_string (String.concat "" [ l;".";(list_to_string tl)])))
-    | _ -> raise X_no_match;;
+let gen_float (hd ,(p ,(tl,exp ))) = match exp with 
+    | Some(_,x) -> Number(Float((10.0 ** (float_of_string(x)) *.
+                        float_of_string (String.concat "" [ hd;".";(list_to_string tl)]))))
+    | None -> Number(Float(float_of_string (String.concat "" [ hd;".";(list_to_string tl)])));;
 
 
+(* let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);; *)
 
-let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);;
+let nt_float = (pack (caten nt_integer (caten dot (caten natural nt_e_exponent))) gen_float) ;;
 
 
 let gen_fraction (l ,(p , tl)) =
@@ -193,7 +204,12 @@ let gen_fraction (l ,(p , tl)) =
 
 let nt_fraction = (pack (caten nt_integer (caten slash natural)) gen_fraction);;
 
-let nt_int_integer = (pack nt_integer (fun (int_moshe) -> Number(Fraction(int_of_string int_moshe, 1))));;
+
+let gen_integer_or_float_undotted (hd, tl) = match tl with
+    | Some(_,x) -> Number(Float((10.0 ** (float_of_string(x)) *.  (float_of_string hd ))))
+    | None -> Number(Fraction(int_of_string hd, 1));;
+
+let nt_int_integer = (pack (caten nt_integer nt_e_exponent) gen_integer_or_float_undotted);;
 
 let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
 
