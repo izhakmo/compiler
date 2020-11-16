@@ -95,7 +95,7 @@ module Reader: sig
   (* val nt_sexper_plus : char list -> sexpr list * char list *)
   val nt_pair : char list -> sexpr * char list 
   val nt_list_proper : char list -> sexpr * char list 
-  
+  val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
 
 
@@ -304,53 +304,7 @@ let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Sym
 let nt_sexper_plural = plus nt_sexper_not_pair;;
 
 
-(* 
-let rec nt_pair lst=
-  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
-            pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr)) lst
-  
-  and _sexpr lst= (disj nt_pair nt_sexper_not_pair) lst;; *)
-
-(* 
-let rec nt_pair lst=
-  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
-            pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr)) lst
-  
-            
-and nt_list_proper lst = 
-  let nt_proper_list = caten tok_lparen (caten _sexpr (caten _sexpr tok_rparen)) in 
-                pack nt_propler_list (fun (lp, (car, (cdr, rp)))) -> Pair(car, Pair(cdr, Nil))) lst
-                  
-                          (* (fun (sexperList)-> List.fold_right (fun (e::aggr) -> Pair(e, aggr)) sexperList)) lst ;; *)
-and dot_and_sexpr lst = 
-        let my_dot = caten _sexpr (caten dot _sexpr) in 
-                  pack my_dot (fun (car, (dot, rp))) -> Pair(car, cdr)) lst
-
-and nt_list_improper lst = 
-        let nt_improper_list = caten tok_lparen (caten _sexpr (caten dot_and_sexpr tok_rparen)) in 
-                  pack nt_propler_list (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr) ) lst
-
-and _sexpr lst= (disj_list [nt_pair; nt_list_proper; nt_list_improper; nt_sexper_not_pair]) lst;;
- *)
-
-
-(* (fun (slist) -> pack slist::Nil
-(a a)  *)
-
-(* let nt_sexper_plus = star (disj nt_pair nt_sexper_not_pair);; *)
-
-
-
-(* let rec nt_list lst = 
-  let nt_impropler_list = (make_paired tok_lparen tok_rparen dot_sexper) in 
-            (pack nt_impropler_list 
-                  (fun (sexperList)-> List.fold_right (fun (e::aggr) -> Pair(e, aggr)) sexperList)) lst ;;
-
-and dot_sexper lst = (disj (caten dot nt_sexper_plus) nt_sexper_plus) lst;; *)
-
 (* ((1 2) . 3) ->Pair (Pair (Number (Int 1), Pair (Number (Int 2), Nil)), Number (Int 3))
-
-
 
 (* 1.(a b (c d)) *)
 
@@ -361,57 +315,6 @@ and dot_sexper lst = (disj (caten dot nt_sexper_plus) nt_sexper_plus) lst;; *)
 3. (a b . c) -> Pair(a, Pair(b,c)) *)
 
 (* 4.(a . (b c)) -> Pair(a, Pair(b,Pair (c, Nil))) *)
-
-(* let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) 
-                           (fun (content) -> List.fold_right (fun e aggr -> Pair(e, aggr)) (List.hd content) (List.tl content) ));; *)
-
-
-(*                            
-let nt_proper_list = (pack (make_paired tok_lparen tok_rparen nt_sexper_plural) 
-
-        (fun (hd::tl) -> List.fold_right (fun e aggr -> Pair(e, aggr)) tl hd));;
- *)
-(* 
-let rec nt_list_proper lst = 
-  let nt_proper_list = caten tok_lparen (caten (star _sexpr) tok_rparen) in 
-                pack nt_proper_list (fun (lp, (experlist, rp)) -> (List.fold_right (fun (e::aggr) -> Pair(e , aggr)) experlist)) lst
-and _sexpr lst= (disj_list [nt_sexper_not_pair; nt_list_proper]) lst;; *)
-
-
-
-(* let rec nt_pair lst=
-  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
-              pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr)) lst
-  and _sexpr lst= (disj nt_pair nt_sexper_not_pair) lst;;
-
-
-
-
-
-let rec nt_list_proper lst= 
-let nt_proper_list = caten tok_lparen (caten (star _sexpr) tok_rparen) in 
-                              (pack nt_proper_list (fun (lp, (hd::tl, rp)) -> (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) Nil ))) lst
-and _sexpr lst= (disj nt_list_proper nt_sexper_not_pair) lst;;
- *)
-
-
-
-let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper]) lst
-
-and nt_pair lst=
-  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
-              pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr)) lst
-
-and nt_list_proper lst= 
-  let nt_proper_list = caten tok_lparen (caten (star _sexpr) tok_rparen) in 
-                                (pack nt_proper_list (fun (lp, (hd::tl, rp)) -> (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) Nil ))) lst;;
-
-
-
-
-(* (1) -> Pair (Numer(Fraction(1,1)), Nil) *)
-
-(* improper list is dotted list *)
 
 (* (#T moshe . 3.14 ) -> Pair(Bool (true), 
                         Pair(Symbol("moshe"),Float(3.14) ) 
@@ -427,6 +330,25 @@ and nt_list_proper lst=
                         )
   
  *)
+
+
+let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper]) lst
+
+and nt_pair lst=
+  let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
+              pack nt_dot (fun (lp, (car, (dot, (cdr, rp)))) -> Pair(car, cdr)) lst
+
+and nt_list_proper lst= 
+  let nt_proper_list = caten tok_lparen (caten (star _sexpr) tok_rparen) in 
+                                (pack nt_proper_list (fun (lp, (hd::tl, rp)) -> (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) Nil ))) lst
+
+
+and nt_list_improper lst= 
+let nt_improper_list = caten tok_lparen (caten (plus _sexpr) (caten dot (caten _sexpr tok_rparen))) in 
+                              (pack nt_improper_list (fun (lp, (hd::tl, (dot, (cdr, rp)))) -> 
+                                                    (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) cdr ))) lst;;
+
+
 
 
 
