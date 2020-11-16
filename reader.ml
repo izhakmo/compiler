@@ -36,6 +36,7 @@ module Reader: sig
   
   val hash : char list -> char * char list
   val semicolon : char list -> char * char list
+  val hash_semicolon : char list -> (char * char) * char list
   val dot : char list -> char * char list
   val slash : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
@@ -98,7 +99,6 @@ module Reader: sig
   val nt_nil : char list -> sexpr * char list 
   
   val nt_sexper_not_pair : char list -> sexpr * char list
-  val nt_sexper_plural : char list -> sexpr list * char list
   (* val nt_proper_list : char list -> sexpr * char list  *)
   (* val nt_pair : char list -> sexpr * char list  *)
   (* val nt_sexper_plus : char list -> sexpr list * char list *)
@@ -125,6 +125,9 @@ let normalize_scheme_symbol str =
 
 let hash = (char '#');;
 let semicolon = (char ';');;
+
+let hash_semicolon = caten hash semicolon;;
+
 let t = (char 't');;
 let f = (char 'f');;
 let sign = disj (char '+') (char '-');;
@@ -323,7 +326,6 @@ let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil
 
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
 
-let nt_sexper_plural = plus nt_sexper_not_pair;;
 
 
 (* ((1 2) . 3) ->Pair (Pair (Number (Int 1), Pair (Number (Int 2), Nil)), Number (Int 3))
@@ -352,6 +354,9 @@ let nt_sexper_plural = plus nt_sexper_not_pair;;
                         )
   
  *)
+
+
+ 
 
 
 let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) lst
@@ -383,6 +388,10 @@ and quotes lst=
            
                             
 
+
+let sexp_comment = (pack (caten hash_semicolon _sexpr)(fun (_)-> Nil));;
+
+                            
 (* (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))) *)
 
 (* let rec nt_line_comments s =  (pack (disj (word_ci "\\n") (pack (caten (range '\032' '\126') nt_epsilon) (fun (e, es) -> (e :: es))) ) blank_blank) s
