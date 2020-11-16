@@ -41,7 +41,9 @@ module Reader: sig
   val slash : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
+  val nt_line_comments : char list -> char list * char list
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
+  val make_WL : (char list -> 'a * char list) -> char list -> 'a * char list 
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
   val digit : char list -> char * char list
@@ -149,11 +151,20 @@ let make_paired nt_left nt_right nt =
   let nt = pack nt (function (e, _) -> e) in
   nt;;
 
+
+  
 let nt_whitespaces = star nt_whitespace;;
 
+let nt_line_comments = (pack (caten semicolon (star (const (fun ch -> (ch != '\010') && (ch != '\004'))))) (fun (e, es) -> (e :: es)));;
+
+let make_WL nt =
+  make_paired (disj nt_whitespaces nt_line_comments) (disj nt_whitespaces nt_line_comments) nt;;
 
 let make_spaced nt =
   make_paired nt_whitespaces nt_whitespaces nt;;
+
+
+
 
 let nt_boolean = 
   let bool_token = (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
@@ -263,26 +274,6 @@ let nt_string = (pack  (make_paired double_qoute double_qoute string_char_plus) 
 
 
 
-
-(* test_string nt_sexper "  \\\"tab\\\"   ";;
-
-
-test_string nt_sexper "\\\"  \\\"" *)
-
-
-
-(* 
-let namedChar_match x = match x with
-  | "nul"       -> Char('\000') 
-  | "newline"   -> Char('\010') 
-  | "return"    -> Char('\013') 
-  | "tab"       -> Char('\009') 
-  | "formfeed"  -> Char('\012') 
-  | "space"     -> Char('\032')
-  | _           -> raise X_no_match;; *)
-
-
-
 let namedChar_match str = match str with
   | "nul"       -> '\000'
   | "newline"   -> '\010'
@@ -325,41 +316,10 @@ let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil
 
 
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
-
-
-
-(* ((1 2) . 3) ->Pair (Pair (Number (Int 1), Pair (Number (Int 2), Nil)), Number (Int 3))
-
-(* 1.(a b (c d)) *)
-
-1.1 (a) -> Pair(Symbol(a), Nil)
-
-2.(a b c) -> Pair(a, Pair(b,Pair(c ,Nil)))
-
-3. (a b . c) -> Pair(a, Pair(b,c)) *)
-
-(* 4.(a . (b c)) -> Pair(a, Pair(b,Pair (c, Nil))) *)
-
-(* (#T moshe . 3.14 ) -> Pair(Bool (true), 
-                        Pair(Symbol("moshe"),Float(3.14) ) 
-                        )
-
-
-(* proper list is nested pair that ends with nil  *)
-
-(#T moshe 3.14 ) -> Pair(Bool (true), 
-                        Pair(Symbol("moshe"),
-                             Pair(Float(3.14), Nil ) 
-                            )
-                        )
-  
- *)
-
-
  
 
 
-let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) lst
+let rec _sexpr lst= (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) lst
 
 and nt_pair lst=
   let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
@@ -367,13 +327,13 @@ and nt_pair lst=
 
 and nt_list_proper lst= 
   let nt_proper_list = caten tok_lparen (caten (star _sexpr) tok_rparen) in 
-                                (pack nt_proper_list (fun (lp, (hd::tl, rp)) -> (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) Nil ))) lst
+                                (pack nt_proper_list (fun (lp, (hdtl, rp)) -> (List.fold_right (fun e aggr -> Pair(e, aggr)) (hdtl) Nil ))) lst
 
 
 and nt_list_improper lst= 
 let nt_improper_list = caten tok_lparen (caten (plus _sexpr) (caten dot (caten _sexpr tok_rparen))) in 
-                              (pack nt_improper_list (fun (lp, (hd::tl, (dot, (cdr, rp)))) -> 
-                                                    (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) cdr ))) lst
+                              (pack nt_improper_list (fun (lp, (hdtl, (dot, (cdr, rp)))) -> 
+                                                    (List.fold_right (fun e aggr -> Pair(e, aggr)) (hdtl) cdr ))) lst
 
 and quotes lst=
   let quote_match str = match str with
@@ -383,15 +343,15 @@ and quotes lst=
   | ","       -> "unquote"
   | _           -> raise X_no_match in
   (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
-                            (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst;;
+                            (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
-           
-                            
+and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst;;
 
 
-let sexp_comment = (pack (caten hash_semicolon _sexpr)(fun (_)-> Nil));;
 
-                            
+
+
+
 (* (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))) *)
 
 (* let rec nt_line_comments s =  (pack (disj (word_ci "\\n") (pack (caten (range '\032' '\126') nt_epsilon) (fun (e, es) -> (e :: es))) ) blank_blank) s
@@ -404,15 +364,24 @@ and blank_blank (x) = match (List.hd x) with
 (* let rec nt_line_comments = (pack maybe(char '\n') (fun (x)-> match (List.hd x) with | "\\n" -> Nil | _ -> nt_line_comments (List.tl x)));; *)
 
 
-
 (* 
+
 let nt_line_comments = (pack (caten semicolon (caten (star (range '\032' '\126')) (word_ci "\\n")))
                                   (fun  (semi , (range , stop))->  Nil));; *)
 
 
+
+(* let nt_line_comments = (caten semicolon (caten (star (disj_list  [(range '\000' '\003'); (range '\005' '\009'); (range '\011' '\127')]))));; *)
+
+
+
+
 let read_sexprs string = raise X_not_yet_implemented;;
 
+(* let read_sexprs string = try (pack ((plus (make_spaced _sexpr)) (string_to_list string)) (fun all rest-> all) )
+                        with X_no_match -> [];; *)
 
+(* let read_sexprs string = (plus (make_spaced _sexpr)) (string_to_list string);; *)
  
 end;; (* struct Reader *)
 open Reader;; 
