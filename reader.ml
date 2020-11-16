@@ -35,6 +35,7 @@ module Reader: sig
 
   
   val hash : char list -> char * char list
+  val semicolon : char list -> char * char list
   val dot : char list -> char * char list
   val slash : char list -> char * char list
   val nt_whitespaces : char list -> char list * char list
@@ -106,7 +107,7 @@ module Reader: sig
   
   (* val quote_match : string -> string  *)
   val quotes : char list -> sexpr * char list 
-
+  val nt_line_comments : char list -> sexpr * char list
 
 end
 = struct
@@ -375,10 +376,23 @@ and quotes lst=
   (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst;;
 
+           
+                            
 
-let nt_line_comments = pack (caten semicolon (caten (star (range '\032' '\126')) (disj (word_ci "\\n") nt_end_of_input)))
-                                  (fun  (semi * (range * stop))->  Nil(list_to_string range));;
-                                  (* (char * (char list * char list))  *)
+
+
+let rec nt_line_comments s = const (pack (disj (word_ci "\\n") (caten (range '\032' '\126') nt_epsilon) blank_blank) s
+
+and blank_blank (x) s = match (List.hd x) with
+  | '\\' -> if ((List.hd (List.tl x)) == 'n') then true 
+            else nt_line_comments s;;
+
+
+
+(* 
+let nt_line_comments = (pack (caten semicolon (caten (star (range '\032' '\126')) (word_ci "\\n")))
+                                  (fun  (semi , (range , stop))->  Nil));; *)
+
 
 let read_sexprs string = raise X_not_yet_implemented;;
 
