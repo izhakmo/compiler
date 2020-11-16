@@ -104,7 +104,7 @@ module Reader: sig
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
   
-  val quote_match : string -> string 
+  (* val quote_match : string -> string  *)
   val quotes : char list -> sexpr * char list 
 
 
@@ -121,6 +121,7 @@ let normalize_scheme_symbol str =
 
 
 let hash = (char '#');;
+let semicolon = (char ';');;
 let t = (char 't');;
 let f = (char 'f');;
 let sign = disj (char '+') (char '-');;
@@ -348,7 +349,7 @@ let nt_sexper_plural = plus nt_sexper_not_pair;;
  *)
 
 
-let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper]) lst
+let rec _sexpr lst= (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) lst
 
 and nt_pair lst=
   let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
@@ -362,26 +363,22 @@ and nt_list_proper lst=
 and nt_list_improper lst= 
 let nt_improper_list = caten tok_lparen (caten (plus _sexpr) (caten dot (caten _sexpr tok_rparen))) in 
                               (pack nt_improper_list (fun (lp, (hd::tl, (dot, (cdr, rp)))) -> 
-                                                    (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) cdr ))) lst;;
+                                                    (List.fold_right (fun e aggr -> Pair(e, aggr)) (hd::tl) cdr ))) lst
 
-
-(* 
-let quote = pack (caten (char '\'') _sexpr) (fun (tok_quote, exper)-> Pair( Symbol("quote") , Pair(exper, Nil)));;
-
-let quasi_quote = pack (caten (char '`') _sexpr) (fun (tok_quote, exper)-> Pair( Symbol("quasiquote") , Pair(exper, Nil)));; *)
-
-(* let quote = pack (caten (char '\'') _sexpr) (fun (tok_quote, exper)-> Pair( Symbol("quote") , Pair(exper, Nil)));; *)
-
-let quote_match str = match str with
+and quotes lst=
+  let quote_match str = match str with
   | "\\'"       -> "quote"
   | "`"   -> "quasiquote"
   | ",@"       -> "unquote-splicing"
   | ","       -> "unquote"
-  | _           -> raise X_no_match;;
+  | _           -> raise X_no_match in
+  (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
+                            (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst;;
 
-let quotes = (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
-                            (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil))));;
 
+let nt_line_comments = pack (caten semicolon (caten (star (range '\032' '\126')) (disj (word_ci "\\n") nt_end_of_input)))
+                                  (fun  (semi * (range * stop))->  Nil(list_to_string range));;
+                                  (* (char * (char list * char list))  *)
 
 let read_sexprs string = raise X_not_yet_implemented;;
 
