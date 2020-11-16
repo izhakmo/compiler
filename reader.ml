@@ -48,6 +48,14 @@ module Reader: sig
   val nt_e : char list -> char * char list
   (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
+  val lowerCase : char list -> char * char list 
+  val upperCase : char list -> char * char list 
+  val nt_SymbolCharNoDot : char list -> char * char list 
+  val nt_SymbolChar : char list -> char * char list 
+
+  val nt_Symbol : char list -> sexpr * char list 
+
+
   val sign : char list -> char * char list
 
   val gen_integer : char option * char list -> string
@@ -66,12 +74,6 @@ module Reader: sig
   val nt_int_integer : char list -> sexpr * char list
   val nt_number : char list -> sexpr * char list 
 
-  val lowerCase : char list -> char * char list 
-  val upperCase : char list -> char * char list 
-  val nt_SymbolCharNoDot : char list -> char * char list 
-  val nt_SymbolChar : char list -> char * char list 
-
-  val nt_Symbol : char list -> sexpr * char list 
 
   
   val string_meta_char_match : string -> char 
@@ -107,7 +109,7 @@ module Reader: sig
   
   (* val quote_match : string -> string  *)
   val quotes : char list -> sexpr * char list 
-  val nt_line_comments : char list -> sexpr * char list
+  (* val nt_line_comments : char list -> sexpr * char list *)
 
 end
 = struct
@@ -164,6 +166,20 @@ let nt_e = (char_ci 'e');;
 let natural = plus digit;;
 
 
+let lowerCase = range 'a' 'z';;
+let upperCase = range 'A' 'Z';;
+ 
+let nt_SymbolCharNoDot = disj_list [digit; lowerCase; (pack upperCase lowercase_ascii); make_one_of char "!$^*-_=+<>/?:"];;
+
+let nt_SymbolChar = disj nt_SymbolCharNoDot dot;;
+
+let nt_Symbol = (pack
+                      (disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)))
+                            (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))))
+                      (fun (hd)-> Symbol(list_to_string hd)));;
+
+
+
 
 let gen_integer (l, tl) = match l with
   | Some('+') ->  (list_to_string tl)
@@ -212,22 +228,10 @@ let gen_integer_or_float_undotted (hd, tl) = match tl with
 
 let nt_int_integer = (pack (caten nt_integer nt_e_exponent) gen_integer_or_float_undotted);;
 
-let nt_number = disj nt_float (disj nt_fraction nt_int_integer);;
+let nt_number = not_followed_by (disj_list [nt_float; nt_fraction; nt_int_integer]) nt_SymbolChar ;;
 
 
 
-
-let lowerCase = range 'a' 'z';;
-let upperCase = range 'A' 'Z';;
- 
-let nt_SymbolCharNoDot = disj_list [digit; lowerCase; (pack upperCase lowercase_ascii); make_one_of char "!$^*-_=+<>/?:"];;
-
-let nt_SymbolChar = disj nt_SymbolCharNoDot dot;;
-
-let nt_Symbol = (pack
-                      (disj (pack (caten nt_SymbolChar (plus nt_SymbolChar)) (fun (e, es) -> (e :: es)))
-                            (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))))
-                      (fun (hd)-> Symbol(list_to_string hd)));;
 
 
 let string_meta_char_match str = match str with
@@ -379,13 +383,16 @@ and quotes lst=
            
                             
 
+(* (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))) *)
+
+(* let rec nt_line_comments s =  (pack (disj (word_ci "\\n") (pack (caten (range '\032' '\126') nt_epsilon) (fun (e, es) -> (e :: es))) ) blank_blank) s
+
+and blank_blank (x) = match (List.hd x) with
+  | '\\' -> if ((List.hd (List.tl x)) == 'n') then Nil
+            else nt_line_comments (List.tl x);; *)
 
 
-let rec nt_line_comments s = const (pack (disj (word_ci "\\n") (caten (range '\032' '\126') nt_epsilon) blank_blank) s
-
-and blank_blank (x) s = match (List.hd x) with
-  | '\\' -> if ((List.hd (List.tl x)) == 'n') then true 
-            else nt_line_comments s;;
+(* let rec nt_line_comments = (pack maybe(char '\n') (fun (x)-> match (List.hd x) with | "\\n" -> Nil | _ -> nt_line_comments (List.tl x)));; *)
 
 
 
