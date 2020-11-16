@@ -97,7 +97,8 @@ module Reader: sig
   val nt_list_proper : char list -> sexpr * char list 
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
-
+  
+  val quote : char list -> sexpr * char list
 
 
 
@@ -350,6 +351,17 @@ let nt_improper_list = caten tok_lparen (caten (plus _sexpr) (caten dot (caten _
 
 
 
+let quote = pack (caten (char '\'') _sexpr) (fun (tok_quote, exper)-> Pair( Symbol("quote") , Pair(exper, Nil)));;
+(* 
+let quasi_quote = pack (caten (char '`') _sexpr) (fun (tok_quote, exper)-> Pair( Symbol("quasiquote") , Pair(exper, Nil)));;
+
+
+
+let quote_match str = match str with
+  | '\''       -> "quote"
+  | '`'   -> "quasiquote"
+
+  | _           -> raise X_no_match;; *)
 
 
 let read_sexprs string = raise X_not_yet_implemented;;
