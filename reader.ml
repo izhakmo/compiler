@@ -150,7 +150,7 @@ let make_paired nt_left nt_right nt =
   
 let nt_whitespaces = star nt_whitespace;;
 
-let nt_line_comments = (pack (caten semicolon (caten (star (const (fun ch -> (ch != '\010') && (ch != '\004')))) (const (fun ch -> (ch != '\010'))))) (fun (e, (es, a)) -> (e :: es@[a])));;
+let nt_line_comments = (pack (caten semicolon (caten (star (const (fun ch -> (ch != '\010') && (ch != '\004')))) (char '\n')))) (fun (e, (es, a)) -> (e :: es@[a]));;
 
 (* let make_WL nt =
   make_paired (disj nt_whitespaces nt_line_comments) (disj nt_whitespaces nt_line_comments) nt;; *)
@@ -162,8 +162,8 @@ let make_spaced nt =
     make_paired (make_spaced nt_line_comments) (make_spaced nt_line_comments) nt;; *)
 
 (* let make_WL nt =
-
       make_paired nt_line_comments nt_line_comments nt;; *)
+
   
 
 let nt_boolean = 
@@ -313,8 +313,16 @@ let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
  
 
+(* let core = (caten (disj nt_line_comments nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) (disj nt_line_comments nt_epsilon)))
+(pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst *)
 
-let rec _sexpr lst= (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) lst
+
+
+(* let rec _sexpr lst= (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes])  lst *)
+
+let rec _sexpr lst= 
+  let core = (caten (disj nt_line_comments nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) (disj nt_line_comments nt_epsilon))) in 
+              (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst
 
 and nt_pair lst=
   let nt_dot = caten tok_lparen (caten _sexpr (caten dot (caten _sexpr tok_rparen))) in 
