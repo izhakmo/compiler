@@ -33,7 +33,7 @@ let rec sexpr_eq s1 s2 =
 module Reader: sig
   val read_sexprs : string -> sexpr list
 
-  
+(*   
   val hash : char list -> char * char list
   val semicolon : char list -> char * char list
   val hash_semicolon : char list -> (char * char) * char list
@@ -43,7 +43,7 @@ module Reader: sig
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val nt_line_comments : char list -> char list * char list
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
-  (* val make_WL : (char list -> 'a * char list) -> char list -> 'a * char list  *)
+  
   
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
@@ -105,8 +105,8 @@ module Reader: sig
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
   
-  val quotes : char list -> sexpr * char list 
-  (* va nt_line_comments : char list -> sexpr * char list *)
+  val quotes : char list -> sexpr * char list  *)
+  
 
 end
 = struct
@@ -152,19 +152,10 @@ let nt_whitespaces = star nt_whitespace;;
 
 let nt_line_comments = (pack (caten semicolon (caten (star (const (fun ch -> (ch != '\010') && (ch != '\004')))) (char '\n')))) (fun (e, (es, a)) -> (e :: es@[a]));;
 
-(* let make_WL nt =
-  make_paired (disj nt_whitespaces nt_line_comments) (disj nt_whitespaces nt_line_comments) nt;; *)
 
 let make_spaced nt =
   make_paired nt_whitespaces nt_whitespaces nt;;
 
-(* let make_WL nt =
-    make_paired (make_spaced nt_line_comments) (make_spaced nt_line_comments) nt;; *)
-
-(* let make_WL nt =
-      make_paired nt_line_comments nt_line_comments nt;; *)
-
-  
 
 let nt_boolean = 
   let bool_token = (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
@@ -313,12 +304,6 @@ let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
  
 
-(* let core = (caten (disj nt_line_comments nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) (disj nt_line_comments nt_epsilon)))
-(pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst *)
-
-
-
-(* let rec _sexpr lst= (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes])  lst *)
 
 let rec _sexpr lst= 
   let core = (caten (disj nt_line_comments nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) (disj nt_line_comments nt_epsilon))) in 
