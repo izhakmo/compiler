@@ -33,7 +33,7 @@ let rec sexpr_eq s1 s2 =
 module Reader: sig
   val read_sexprs : string -> sexpr list
 
-(*   
+  
   val hash : char list -> char * char list
   val semicolon : char list -> char * char list
   val hash_semicolon : char list -> (char * char) * char list
@@ -97,15 +97,16 @@ module Reader: sig
 
   val tok_lparen : char list -> char * char list 
   val tok_rparen : char list -> char * char list 
-  val nt_nil : char list -> sexpr * char list 
+  
   
   val nt_sexper_not_pair : char list -> sexpr * char list
   val nt_pair : char list -> sexpr * char list 
   val nt_list_proper : char list -> sexpr * char list 
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
+  val nt_nil : char list -> sexpr * char list 
   
-  val quotes : char list -> sexpr * char list  *)
+  val quotes : char list -> sexpr * char list 
   
 
 end
@@ -295,18 +296,18 @@ let tok_lparen = make_spaced ( char '(');;
 
 let tok_rparen = make_spaced ( char ')');;
 
-let nt_nil = (pack (make_paired tok_lparen tok_rparen nt_epsilon) (fun (_)-> Nil ));;
+(* let nt_nil = (pack (make_paired tok_lparen tok_rparen (disj_list [nt_epsilon; nt_line_comments; nt_whitespaces])) (fun (_)-> Nil ));; *)
 (* comments inside instead of epsilon *)
 (* These may enclose whitespaces and comments *)
 
 
 
-let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ; nt_nil]);;
+let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_Symbol; nt_string; nt_char ]);;
  
 
 
 let rec _sexpr lst= 
-  let core = (caten (disj nt_line_comments nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes]) (disj nt_line_comments nt_epsilon))) in 
+  let core = (caten (disj (star nt_line_comments) nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil]) (disj (star nt_line_comments) nt_epsilon))) in 
               (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst
 
 and nt_pair lst=
@@ -333,7 +334,9 @@ and quotes lst=
   (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
-and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst;;
+and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
+
+and nt_nil lst=  (pack (make_paired tok_lparen tok_rparen (disj_list [nt_line_comments; nt_whitespaces ;nt_epsilon])) (fun (_)-> Nil )) lst;;
 
 
 
