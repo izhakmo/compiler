@@ -43,13 +43,13 @@ module Reader: sig
   val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
   val nt_line_comments : char list -> char list * char list
   val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
-  val make_WL : (char list -> 'a * char list) -> char list -> 'a * char list 
+  (* val make_WL : (char list -> 'a * char list) -> char list -> 'a * char list  *)
+  
   val boolOrBackSlash : char -> sexpr
   val nt_boolean : char list -> sexpr * char list
   val digit : char list -> char * char list
 
   val nt_e : char list -> char * char list
-  (* val tok_num : char list -> number * char list *)
   val natural : char list -> char list * char list
   val lowerCase : char list -> char * char list 
   val upperCase : char list -> char * char list 
@@ -83,7 +83,6 @@ module Reader: sig
   val string_meta_char : char list -> char * char list 
   val stringLiteralChar : char list -> char * char list 
   val string_char : char list -> char * char list 
-  (* val string_char_plus : char list -> sexpr * char list  *)
   val string_char_plus : char list -> char list * char list 
   val double_qoute : char list -> char * char list
   val nt_string : char list -> sexpr * char list 
@@ -101,17 +100,13 @@ module Reader: sig
   val nt_nil : char list -> sexpr * char list 
   
   val nt_sexper_not_pair : char list -> sexpr * char list
-  (* val nt_proper_list : char list -> sexpr * char list  *)
-  (* val nt_pair : char list -> sexpr * char list  *)
-  (* val nt_sexper_plus : char list -> sexpr list * char list *)
   val nt_pair : char list -> sexpr * char list 
   val nt_list_proper : char list -> sexpr * char list 
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
   
-  (* val quote_match : string -> string  *)
   val quotes : char list -> sexpr * char list 
-  (* val nt_line_comments : char list -> sexpr * char list *)
+  (* va nt_line_comments : char list -> sexpr * char list *)
 
 end
 = struct
@@ -155,16 +150,21 @@ let make_paired nt_left nt_right nt =
   
 let nt_whitespaces = star nt_whitespace;;
 
-let nt_line_comments = (pack (caten semicolon (star (const (fun ch -> (ch != '\010') && (ch != '\004'))))) (fun (e, es) -> (e :: es)));;
+let nt_line_comments = (pack (caten semicolon (caten (star (const (fun ch -> (ch != '\010') && (ch != '\004')))) (const (fun ch -> (ch != '\010'))))) (fun (e, (es, a)) -> (e :: es@[a])));;
 
-let make_WL nt =
-  make_paired (disj nt_whitespaces nt_line_comments) (disj nt_whitespaces nt_line_comments) nt;;
+(* let make_WL nt =
+  make_paired (disj nt_whitespaces nt_line_comments) (disj nt_whitespaces nt_line_comments) nt;; *)
 
 let make_spaced nt =
   make_paired nt_whitespaces nt_whitespaces nt;;
 
+(* let make_WL nt =
+    make_paired (make_spaced nt_line_comments) (make_spaced nt_line_comments) nt;; *)
 
+(* let make_WL nt =
 
+      make_paired nt_line_comments nt_line_comments nt;; *)
+  
 
 let nt_boolean = 
   let bool_token = (caten hash (disj (char_ci 't') (char_ci 'f'))) in 
@@ -212,8 +212,6 @@ let gen_float (hd ,(p ,(tl,exp ))) = match exp with
                         float_of_string (String.concat "" [ hd;".";(list_to_string tl)]))))
     | None -> Number(Float(float_of_string (String.concat "" [ hd;".";(list_to_string tl)])));;
 
-
-(* let nt_float = (pack (caten nt_integer (caten dot natural)) gen_float);; *)
 
 let nt_float = (pack (caten nt_integer (caten dot (caten natural nt_e_exponent))) gen_float) ;;
 
@@ -299,9 +297,6 @@ let prefixed_char = (pack (caten hash (char '\\'))  (fun (one, two) -> (one :: [
 let nt_char =  
     let char_token = (caten prefixed_char (disj namedChar visibleSimpleChar)) in 
     pack char_token (fun (prefixed, tokenized) -> (Char (tokenized)));;
-
-(* #;( #; (#; (#; moshe) hagever) q) *)
-
 
 
 
