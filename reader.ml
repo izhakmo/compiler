@@ -351,39 +351,9 @@ and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((
 
 
 
+let read_sexprs string = let (a, b) = (star (make_spaced _sexpr)) (string_to_list string) in a;;
 
-(* (pack (caten nt_SymbolCharNoDot nt_epsilon) (fun (e, es) -> (e :: es))) *)
-
-(* let rec nt_line_comments s =  (pack (disj (word_ci "\\n") (pack (caten (range '\032' '\126') nt_epsilon) (fun (e, es) -> (e :: es))) ) blank_blank) s
-
-and blank_blank (x) = match (List.hd x) with
-  | '\\' -> if ((List.hd (List.tl x)) == 'n') then Nil
-            else nt_line_comments (List.tl x);; *)
-
-
-(* let rec nt_line_comments = (pack maybe(char '\n') (fun (x)-> match (List.hd x) with | "\\n" -> Nil | _ -> nt_line_comments (List.tl x)));; *)
-
-
-(* 
-
-let nt_line_comments = (pack (caten semicolon (caten (star (range '\032' '\126')) (word_ci "\\n")))
-                                  (fun  (semi , (range , stop))->  Nil));; *)
-
-
-
-(* let nt_line_comments = (caten semicolon (caten (star (disj_list  [(range '\000' '\003'); (range '\005' '\009'); (range '\011' '\127')]))));; *)
-
-
-
-
-let read_sexprs string = raise X_not_yet_implemented;;
-
-(* let read_sexprs string = try (pack ((plus (make_spaced _sexpr)) (string_to_list string)) (fun all rest-> all) )
-                        with X_no_match -> [];; *)
-
-(* let read_sexprs string = (plus (make_spaced _sexpr)) (string_to_list string);; *)
  
 end;; (* struct Reader *)
 open Reader;; 
 
-(* test_string nt_boolean "#T";; *)
