@@ -1,4 +1,3 @@
-
 #use "pc.ml";;
 open PC;;
 
@@ -32,83 +31,6 @@ let rec sexpr_eq s1 s2 =
 
 module Reader: sig
   val read_sexprs : string -> sexpr list
-
-  
-  val hash : char list -> char * char list
-  val semicolon : char list -> char * char list
-  val hash_semicolon : char list -> (char * char) * char list
-  val dot : char list -> char * char list
-  val slash : char list -> char * char list
-  val nt_whitespaces : char list -> char list * char list
-  val make_paired : ('a -> 'b * 'c) -> ('d -> 'e * 'f) -> ('c -> 'g * 'd) -> 'a -> 'g * 'f
-  val nt_line_comments : char list -> char list * char list
-  val make_spaced : (char list -> 'a * char list) -> char list -> 'a * char list
-  
-  
-  val boolOrBackSlash : char -> sexpr
-  val nt_boolean : char list -> sexpr * char list
-  val digit : char list -> char * char list
-
-  val nt_e : char list -> char * char list
-  val natural : char list -> char list * char list
-  val lowerCase : char list -> char * char list 
-  val upperCase : char list -> char * char list 
-  val nt_SymbolCharNoDot : char list -> char * char list 
-  val nt_SymbolChar : char list -> char * char list 
-
-  val nt_Symbol : char list -> sexpr * char list 
-
-
-  val sign : char list -> char * char list
-
-  val gen_integer : char option * char list -> string
-  val nt_integer : char list -> string * char list
-
-  val nt_e_exponent : char list -> (char * string) option * char list
-  
-  val gen_float : string * ('a * (char list * ('b * string) option)) -> sexpr 
-  val nt_float : char list -> sexpr * char list
-
-  val gen_fraction : string * (char * char list) -> sexpr 
-  val nt_fraction : char list -> sexpr * char list
-
-  val gen_integer_or_float_undotted : string * ('a * string) option -> sexpr
-
-  val nt_int_integer : char list -> sexpr * char list
-  val nt_number : char list -> sexpr * char list 
-
-
-  
-  val string_meta_char_match : string -> char 
-  val string_meta_char : char list -> char * char list 
-  val stringLiteralChar : char list -> char * char list 
-  val string_char : char list -> char * char list 
-  val string_char_plus : char list -> char list * char list 
-  val double_qoute : char list -> char * char list
-  val nt_string : char list -> sexpr * char list 
-
-  val namedChar_match : string -> char 
-  val namedChar : char list -> char * char list 
-  val string_meta_char : char list -> char * char list 
-  val visibleSimpleChar : char list -> char * char list 
-  val prefixed_char : char list -> char list * char list 
-  val nt_char : char list -> sexpr * char list 
-
-
-  val tok_lparen : char list -> char * char list 
-  val tok_rparen : char list -> char * char list 
-  
-  
-  val nt_sexper_not_pair : char list -> sexpr * char list
-  val nt_pair : char list -> sexpr * char list 
-  val nt_list_proper : char list -> sexpr * char list 
-  val nt_list_improper : char list -> sexpr * char list 
-  val _sexpr : char list -> sexpr * char list 
-  val nt_nil : char list -> sexpr * char list 
-  
-  val quotes : char list -> sexpr * char list 
-  
-
 end
 = struct
 let normalize_scheme_symbol str =
@@ -256,11 +178,11 @@ let stringLiteralChar = disj_list [(range '\032' '\033'); (range '\035' '\091');
 
 let string_char = disj stringLiteralChar string_meta_char;;
 
-let string_char_plus = plus string_char;;
+let string_char_star = star string_char;;
 
 let double_qoute = (char_ci '\"');;
 
-let nt_string = (pack  (make_paired double_qoute double_qoute string_char_plus)   (fun (hd)-> String(list_to_string hd)));;
+let nt_string = (pack  (make_paired double_qoute double_qoute string_char_star)   (fun (hd)-> String(list_to_string hd)));;
 
 
 
@@ -269,7 +191,7 @@ let namedChar_match str = match str with
   | "newline"   -> '\010'
   | "return"    -> '\013'
   | "tab"       -> '\009'
-  | "formfeed"  -> '\012'
+  | "page"      -> '\012'
   | "space"     -> '\032'
   | _           -> raise X_no_match;;
   
@@ -277,7 +199,7 @@ let namedChar_match str = match str with
 
 
 (* This code parse the ocaml language and not scheme language *)
-let namedChar = (pack (disj_list [word_ci "nul"; word_ci "newline"; word_ci "return"; word_ci "tab"; word_ci "formfeed"; word_ci "space"]) 
+let namedChar = (pack (disj_list [word_ci "nul"; word_ci "newline"; word_ci "return"; word_ci "tab"; word_ci "page"; word_ci "space"]) 
                              (fun (hd)-> (namedChar_match (list_to_string (List.map lowercase_ascii hd)))));;
 
 
@@ -326,12 +248,12 @@ let nt_improper_list = caten tok_lparen (caten (plus _sexpr) (caten dot (caten _
 
 and quotes lst=
   let quote_match str = match str with
-  | "\\'"       -> "quote"
+  | "'"       -> "quote"
   | "`"   -> "quasiquote"
   | ",@"       -> "unquote-splicing"
   | ","       -> "unquote"
   | _           -> raise X_no_match in
-  (pack (caten (disj_list [(word "\\'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
+  (pack (caten (disj_list [(word "'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
 and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
@@ -347,4 +269,3 @@ let read_sexprs string = let (a, b) = (star (make_spaced _sexpr)) (string_to_lis
  
 end;; (* struct Reader *)
 open Reader;; 
-
