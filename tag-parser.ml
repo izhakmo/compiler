@@ -99,13 +99,13 @@ let rec expr (car,cdr) = match car with
 
   
 (* TODO CHECK THAT WE ARE NOT RESERVED LIST *)
-and let var_expr x = match x with 
+and var_expr x = match x with 
   | Symbol(s) -> Var(s) 
   | _ -> raise X_no_match
 
 
 
-and let if_expr (tes, (the, els))= pack x ()
+and if_expr (tes, (the, els))= pack x ()
   let test_exp = expr tes in
   let then_exp = expr the in
   let else_exp = expr els in
