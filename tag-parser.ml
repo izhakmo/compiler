@@ -127,7 +127,19 @@ let rec tag_pareser sexpr = match sexpr with
       | _ -> raise X_no_match
       in
       if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s)
-        
+
+(*       
+      > (print-template '(define b 2))
+      Pair(Symbol "define", Pair(Symbol "b", Pair(Number (Fraction(2, 1)), Nil))) *)
+
+  | Pair(Symbol "define", Pair(var, sexpr)) -> 
+      let var_exp = tag_pareser var in
+      let sexpr_exp = tag_pareser sexpr in
+      let def_exp = match var_exp with 
+        | Var(s) -> Def(var_exp,sexpr_exp) 
+        | _ -> raise X_no_match in
+      def_exp
+
   (* Applic MUST BE THE LAST*)
   | Pair(proc, params) -> 
       let proc_exp = tag_pareser proc in
