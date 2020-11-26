@@ -71,7 +71,6 @@ let reserved_word_list =
 
 
 
-(* let define_expr = pack x (fun Pair(car1, cdr1) -> Define());; *)
 
 (* 3. Conditionals - supprot if-then & if-then-else ==> when we have if-then ==> we sould convert it to if-then-else where the else is Const(VOID) *)
 (* Disjunctions are simply or-expressions *)
@@ -110,20 +109,34 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
         (* let bodies = (tag_pareser body) in *)
-        let bodies = (seq_expr body) in
-        LambdaSimple(params_string_list, bodies)
+        (* let bodies = (seq_expr body) in *)
+        LambdaSimple(params_string_list, Var("============ TODO SEQ ==========="))
 
-
-
+  
   (* | Pair(hd, tl) -> seq_expr sexpr *)
         (* let hd_exp = (tag_pareser hd) in 
         let tl_exp = (tag_pareser tl) in
         Seq([hd_exp]@[tl_exp]) *)
 
-  | _ -> raise X_no_match
 
 
-and seq_expr sexpr = function 
+
+        
+  (* Applic MUST BE THE LAST*)
+  | Pair(proc, params) -> 
+      let proc_exp = tag_pareser proc in
+      let rec params_exp lst sexpr = match sexpr with
+        | Nil -> lst
+        | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
+        | _ -> raise X_no_match
+      in
+      Applic(proc_exp, (params_exp [] params))
+
+  (* | _ -> raise X_no_match *)
+  ;;
+
+
+(* and seq_expr sexpr = function 
     | Pair(hd, tl) -> 
         let hd_exp = (tag_pareser hd) in 
         let tl_exp = (tag_pareser tl) in
@@ -132,13 +145,29 @@ and seq_expr sexpr = function
         | _ -> raise X_no_match
         in
         Seq([hd_exp]@[seq_extract])
-    | _ -> raise X_no_match ;;
-
-  (* tag_pareser (Symbol "T");; *)
+    | _ -> raise X_no_match ;; *)
 
 
-  (* > (print-template '(lambda () #t) )
-  Pair(Symbol "lambda", Pair(Nil, Pair(Bool true, Nil))) *)
+
+    (* (print-template '(+ 4 5) )
+    (Pair(Symbol "+", Pair(Number (Fraction(4, 1)), Pair(Number (Fraction(5, 1)), Nil)))) *)
+    
+    (* > (print-template '((lambda (a) a) 42 ))
+    (Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Nil), Pair(Symbol "a", Nil))), Pair(Number (Fraction(42, 1)), Nil))) *)
+
+
+
+
+
+
+
+
+
+  (* tag_pareser (Symbol "T");;
+
+
+  > (print-template '(lambda () #t) )
+  Pair(Symbol "lambda", Pair(Nil, Pair(Bool true, Nil)))
 
   (print-template '(lambda (a b) a) )
   (Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)),
@@ -166,7 +195,7 @@ Pair(Symbol "lambda", Pair(
 
 (print-template '(lambda () (+ 1 2)))
 Pair(Symbol "lambda", Pair(Nil, 
-                          Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil)))
+                          Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
 
 
 let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
@@ -175,4 +204,5 @@ let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
 
   
 end;; (* struct Tag_Parser *)
+open Tag_Parser;;
 
