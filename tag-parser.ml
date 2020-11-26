@@ -119,8 +119,14 @@ let rec tag_pareser sexpr = match sexpr with
         Seq([hd_exp]@[tl_exp]) *)
 
 
-
-
+  (* | Pair(Symbol "or", Nil) ->  *)
+  | Pair(Symbol "or", s) -> 
+      let rec expr_list lst sexpr = match sexpr with
+      | Nil -> lst
+      | Pair(s ,rest) -> (expr_list (lst@[(tag_pareser s)]) rest)
+      | _ -> raise X_no_match
+      in
+      if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s)
         
   (* Applic MUST BE THE LAST*)
   | Pair(proc, params) -> 
@@ -130,10 +136,9 @@ let rec tag_pareser sexpr = match sexpr with
         | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
         | _ -> raise X_no_match
       in
-      Applic(proc_exp, (params_exp [] params))
+      Applic(proc_exp, (params_exp [] params));;
 
-  (* | _ -> raise X_no_match *)
-  ;;
+  (* | _ -> raise X_no_match;; *)
 
 
 (* and seq_expr sexpr = function 
@@ -155,10 +160,10 @@ let rec tag_pareser sexpr = match sexpr with
     (* > (print-template '((lambda (a) a) 42 ))
     (Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Nil), Pair(Symbol "a", Nil))), Pair(Number (Fraction(42, 1)), Nil))) *)
 
+ 
+    
 
-
-
-
+    
 
 
 
