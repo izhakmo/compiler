@@ -46,12 +46,15 @@ let rec expr_eq e1 e2 =
 exception X_syntax_error;;
 
 module type TAG_PARSER = sig
+  val symbol_extract_fun : string list -> sexpr -> string list
+  val tag_pareser : sexpr -> expr
+
   val tag_parse_expressions : sexpr list -> expr list
   
-  val reserved_word_list : string list 
+  (* val reserved_word_list : string list 
   val const_sexpr : sexpr -> expr 
   val const_expr_not_standart : sexpr * sexpr -> expr
-  val var_expr : sexpr -> expr 
+  val var_expr : sexpr -> expr  *)
 
 
 end;; (* signature TAG_PARSER *)
@@ -66,74 +69,108 @@ let reserved_word_list =
 
 (* work on the tag parser starts here *)
 
- 
-(* read_sexprs "(define lambda 3) (define x 6)";;
-- : sexpr list =      [Pair (Symbol "define", Pair (Symbol "lambda", Pair (Number (Fraction (3, 1)), Nil)));                
-                        Pair (Symbol "define", Pair (Symbol "x", Pair (Number (Fraction (6, 1)), Nil)))]
 
-
-read_sexprs "(define y '(1 2))";;
-- : sexpr list =    [Pair (Symbol "define",  
-                                  Pair (Symbol "y",  Pair (Pair (Symbol "quote", Pair (Pair (Number (Fraction (1, 1)), Pair (Number (Fraction (2, 1)), Nil)), Nil)), Nil)))] *)
-
-
-
- (* (Booleans, chars, numbers, strings) *)
-
-let const_sexpr x = match x with
-  | Bool(s) -> Const(Sexpr(x))
-  | Number(s) -> Const(Sexpr(x))
-  | Char(s) -> Const(Sexpr(x))
-  | String(s) -> Const(Sexpr(x))
-  | _ -> raise X_no_match;;
-                  
-let const_expr_not_standart (car,cdr) = match car with
-  | Symbol("quote") -> Const(Sexpr(cdr))
-  | _ -> const_sexpr car;;
-
-
-let rec expr (car,cdr) = match car with
-  | Symbol("if") -> if_expr cdr
-  | Symbol(s) -> var_expr cdr
-  | _ -> const_expr_not_standart (car,cdr)
-
-  
-(* TODO CHECK THAT WE ARE NOT RESERVED LIST *)
-and var_expr x = match x with 
-  | Symbol(s) -> Var(s) 
-  | _ -> raise X_no_match
-
-
-
-and if_expr (tes, (the, els))= pack x ()
-  let test_exp = expr tes in
-  let then_exp = expr the in
-  let else_exp = expr els in
-  If(test_exp, then_exp, else_exp );;
 
 (* let define_expr = pack x (fun Pair(car1, cdr1) -> Define());; *)
 
 (* 3. Conditionals - supprot if-then & if-then-else ==> when we have if-then ==> we sould convert it to if-then-else where the else is Const(VOID) *)
 (* Disjunctions are simply or-expressions *)
 
-read_sexprs "(if #t 1 2)";;
-- : sexpr list =   
-[Pair (Symbol "if",                                                               
-  Pair (Bool true,                                                              
-   Pair (Number (Fraction (1, 1)), 
-   Pair (Number (Fraction (2, 1)), Nil))))]
+let rec symbol_extract_fun lst sexpr = match sexpr with
+  | Nil -> lst
+  | Pair(Symbol(s),rest) -> (symbol_extract_fun (lst@[s]) rest)
+  | _ -> raise X_no_match;;
 
-read_sexprs "(if #t 1)";;
-- : sexpr list =         
-[Pair (Symbol "if", 
-  Pair (Bool true, 
-  Pair (Number (Fraction (1, 1)), 
-        Nil)))]  
+  
+let rec tag_pareser sexpr = match sexpr with
+  | Bool(s) -> Const(Sexpr(sexpr))
+  | Number(s) -> Const(Sexpr(sexpr))
+  | Char(s) -> Const(Sexpr(sexpr))
+  | String(s) -> Const(Sexpr(sexpr))
+  | Pair(Symbol "quote", Pair(sexpr, Nil)) -> Const(Sexpr(sexpr))
+  | Nil -> Const(Void)
 
-(if (> 4 5) (+ 4 5) (- 4 5))
+  (* TODO CHECK THAT WE ARE NOT RESERVED LIST *)
+  | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else raise X_no_match
+  
+  
+  | Pair(Symbol "if", Pair(test_sexp, Pair(then_sexp, Pair(else_sexp, Nil)))) ->
+      let test_exp = (tag_pareser test_sexp) in
+      let then_exp = (tag_pareser then_sexp) in
+      let else_exp = (tag_pareser else_sexp) in
+      If(test_exp, then_exp, else_exp)
+  
+  | Pair(Symbol "if",Pair(test_sexp,Pair(then_sexp ,Nil))) ->
+      let test_exp = tag_pareser test_sexp in
+      let then_exp = tag_pareser then_sexp in
+      If(test_exp, then_exp, Const(Void))
+  
+  (* | Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
+
+  | Pair(Symbol "lambda", Pair(params, body)) ->  
+        let params_string_list = (symbol_extract_fun [] params) in 
+        (* let bodies = (tag_pareser body) in *)
+        let bodies = (seq_expr body) in
+        LambdaSimple(params_string_list, bodies)
+
+
+
+  (* | Pair(hd, tl) -> seq_expr sexpr *)
+        (* let hd_exp = (tag_pareser hd) in 
+        let tl_exp = (tag_pareser tl) in
+        Seq([hd_exp]@[tl_exp]) *)
+
+  | _ -> raise X_no_match
+
+
+and seq_expr sexpr = function 
+    | Pair(hd, tl) -> 
+        let hd_exp = (tag_pareser hd) in 
+        let tl_exp = (tag_pareser tl) in
+        let seq_extract = match tl_exp with 
+        | Seq(x) -> x 
+        | _ -> raise X_no_match
+        in
+        Seq([hd_exp]@[seq_extract])
+    | _ -> raise X_no_match ;;
+
+  (* tag_pareser (Symbol "T");; *)
+
+
+  (* > (print-template '(lambda () #t) )
+  Pair(Symbol "lambda", Pair(Nil, Pair(Bool true, Nil))) *)
+
+  (print-template '(lambda (a b) a) )
+  (Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)),
+    Pair(Symbol "a", Nil))))
+  
+
+
+  (print-template '(lambda (n1) n1 #t 42) )
+Pair(Symbol "lambda", Pair(
+  Pair(Symbol "n1", Nil),
+  Pair(Symbol "n1", Pair(Bool true, Pair(Number (Fraction(42, 1)), Nil)))))
+
+(lambda (a b) a b)
+ 
+(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Symbol "a", Pair(Symbol "b", Nil)))))
+
+
+
+  (print-template '(lambda (a b c d) a))
+  Pair(Symbol "lambda", 
+                    Pair(
+                          Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Pair(Symbol "d", Nil)))),           
+                          Pair(Symbol "a", Nil)
+                        ))
+
+(print-template '(lambda () (+ 1 2)))
+Pair(Symbol "lambda", Pair(Nil, 
+                          Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil)))
 
 
 let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
+
 
 
   
