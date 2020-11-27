@@ -126,7 +126,13 @@ let rec tag_pareser sexpr = match sexpr with
       | Pair(s ,rest) -> (expr_list (lst@[(tag_pareser s)]) rest)
       | _ -> raise X_no_match
       in
-      if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s)
+      (* if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s) *)
+      let conds = match s with
+      | Nil -> Const(Sexpr(Bool(false)))
+      | Pair(exp ,Nil) -> Const(Sexpr(exp))
+      | _ -> Or(expr_list [] s)
+      in 
+      conds
 
 (*       
       > (print-template '(define b 2))
