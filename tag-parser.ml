@@ -68,12 +68,9 @@ let reserved_word_list =
    "unquote-splicing"];;  
 
 (* work on the tag parser starts here *)
-
-
-
-
-(* 3. Conditionals - supprot if-then & if-then-else ==> when we have if-then ==> we sould convert it to if-then-else where the else is Const(VOID) *)
-(* Disjunctions are simply or-expressions *)
+(* 
+let reserved_specialform_list =
+  ["and"; "begin"; "cond"; "let"; "let*"; "letrec"; "quasiquote"; "quote"; "pset!"; "unquote"; "unquote-splicing"];;  *)
 
 let rec symbol_extract_fun lst sexpr = match sexpr with
   | Nil -> lst
@@ -89,9 +86,7 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "quote", Pair(sexpr, Nil)) -> Const(Sexpr(sexpr))
   | Nil -> Const(Void)
 
-  (* TODO CHECK THAT WE ARE NOT RESERVED LIST *)
   | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else raise X_no_match
-  
   
   | Pair(Symbol "if", Pair(test_sexp, Pair(then_sexp, Pair(else_sexp, Nil)))) ->
       let test_exp = (tag_pareser test_sexp) in
@@ -106,20 +101,17 @@ let rec tag_pareser sexpr = match sexpr with
   
   (* | Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
 
+  (* lmabda opt *)
+  (* (* TODO =========== duplicates  ================================ *) ========== *)
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
-        (* let bodies = (tag_pareser body) in *)
-        (* let bodies = (seq_expr body) in *)
-        LambdaSimple(params_string_list, Var("============ TODO SEQ ==========="))
-
-  
-  (* | Pair(hd, tl) -> seq_expr sexpr *)
-        (* let hd_exp = (tag_pareser hd) in 
-        let tl_exp = (tag_pareser tl) in
-        Seq([hd_exp]@[tl_exp]) *)
+        let bodies = (tag_pareser body) in
+        let lambda_exp = match bodies with
+          | Applic(app,lic) -> LambdaSimple(params_string_list, app)
+          | _ -> raise X_no_match in
+            lambda_exp
 
 
-  
   | Pair(Symbol "or", s) -> 
       let rec expr_list lst sexpr = match sexpr with
       | Nil -> lst
@@ -129,7 +121,7 @@ let rec tag_pareser sexpr = match sexpr with
       (* if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s) *)
       let conds = match s with
       | Nil -> Const(Sexpr(Bool(false)))
-      | Pair(exp ,Nil) -> Const(Sexpr(exp))
+      | Pair(exp ,Nil) -> (tag_pareser exp)
       | _ -> Or(expr_list [] s)
       in 
       conds
@@ -158,13 +150,90 @@ let rec tag_pareser sexpr = match sexpr with
     | Pair(s ,rest) -> (expr_list (lst@[(tag_pareser s)]) rest)
     | _ -> raise X_no_match
     in
-    (* if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s) *)
     let conds = match s with
     | Nil -> Const(Void)
     | Pair(exp ,Nil) -> tag_pareser exp
     | _ -> Seq(expr_list [] s)
     in 
     conds
+
+    | Pair(Symbol "and", s) -> 
+      let and_exp = match s with
+        | Nil -> Const(Sexpr(Bool(true)))
+        | Pair(exp ,Nil) -> (tag_pareser exp)
+        | Pair(s , rest) -> 
+          let hd = tag_pareser s in
+          let and_to_if = tag_pareser (Pair(Symbol "and",rest)) in 
+          If(hd, and_to_if, Const(Sexpr(Bool(false))))
+        | _ -> raise X_no_match
+      in 
+      and_exp
+
+
+
+
+      
+    | Pair(Symbol "let", Pair( params, body)) -> 
+        let rec params_exps params = match params with
+          | Nil -> Nil
+          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(var_sexp,Nil)
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(var_sexp, (params_exps ribs))
+          | _ -> raise X_no_match
+        in
+        let rec vals_exps params = match params with
+          | Nil -> Nil
+          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(val_sexp,Nil)
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(val_sexp, (vals_exps ribs))
+          | _ -> raise X_no_match
+        in
+        let rec app_params lst sexpr = match sexpr with
+          | Nil -> lst
+          | Pair(s ,rest) -> (app_params (lst@[(tag_pareser s)]) rest)
+          | _ -> raise X_no_match
+        in
+        let lambda_params = params_exps params in
+        let app_vals = vals_exps params in
+        let some_other_lies_in_array = (app_params [] app_vals) in
+        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_params,body)))) , some_other_lies_in_array)
+
+        Applic (LambdaSimple (["a"], Var "c"),  [Applic (Const (Sexpr (Number (Fraction (3, 1)))), [])])
+
+        (* Applic((tag_pareser Pair(Symbol "lambda", Pair(params_exps params, body))), (app_params [] (vals_exps params))) *)
+
+
+
+        (* Pair(Symbol "lambda", Pair(params_exps, Pair(body, Nil)))
+
+        (let ((a 3) (b 4)) (+ a b)) ->
+        Applic(lambda (a b) (+ a b), [3,4])
+        ((lambda (a b) (+ a b)) 3 4)
+      
+        Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil))), Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil)))
+        Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil))), Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil)))
+       
+      (let ((a 3)) c )
+      
+      Pair(Symbol "let", Pair(
+                                Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Nil), 
+                                Pair(Symbol "c", Nil)
+                              ))
+      
+      Pair(Symbol "let", Pair(    
+                                Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), 
+                                Pair(Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil)), Nil)), 
+                                Pair(Symbol "c", Nil)))
+       *)
+        
+
+
+
+
+
+
+
+
+
+
 
   (* Applic MUST BE THE LAST*)
   | Pair(proc, params) -> 
@@ -178,17 +247,8 @@ let rec tag_pareser sexpr = match sexpr with
 
   (* | _ -> raise X_no_match;; *)
 
+  
 
-(* and seq_expr sexpr = function 
-    | Pair(hd, tl) -> 
-        let hd_exp = (tag_pareser hd) in 
-        let tl_exp = (tag_pareser tl) in
-        let seq_extract = match tl_exp with 
-        | Seq(x) -> x 
-        | _ -> raise X_no_match
-        in
-        Seq([hd_exp]@[seq_extract])
-    | _ -> raise X_no_match ;; *)
 
 
 
@@ -199,13 +259,6 @@ let rec tag_pareser sexpr = match sexpr with
     (Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Nil), Pair(Symbol "a", Nil))), Pair(Number (Fraction(42, 1)), Nil))) *)
 
  
-    
-
-    
-
-
-
-
   (* tag_pareser (Symbol "T");;
 
 
