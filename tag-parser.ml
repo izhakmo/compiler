@@ -134,21 +134,20 @@ let rec tag_pareser sexpr = match sexpr with
       in 
       conds
 
-  (* TODO the parameter for the define after the var is applic and this is not good *)
   | Pair(Symbol "define", Pair(var, sexpr)) -> 
-      let var_exp = tag_pareser var in
-      let sexpr_exp = tag_pareser sexpr in
-      let def_exp = match var_exp with 
-        | Var(s) -> Def(var_exp,sexpr_exp) 
-        | _ -> raise X_no_match in
-      def_exp
+    let var_exp = tag_pareser var in
+    let sexpr_exp = tag_pareser sexpr in
+    let def_exp = match var_exp, sexpr_exp with 
+      | Var(s),Applic(app, lic) -> Def(var_exp,app) 
+      | _ -> raise X_no_match in
+    def_exp
 
-(* TODO the parameter for the SET! after the var is applic and this is not good *)
+
   | Pair(Symbol "set!",Pair(var, tl)) ->
     let var_exp = tag_pareser var in
     let tl_exp = tag_pareser tl in
-    let set_exp = match var_exp with
-      | Var(s) -> Set(var_exp,tl_exp)
+    let set_exp = match var_exp,tl_exp with
+      | Var(s),Applic(app, lic) -> Set(var_exp,app)
       | _ -> raise X_no_match in
     set_exp
 
