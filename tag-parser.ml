@@ -119,7 +119,7 @@ let rec tag_pareser sexpr = match sexpr with
         Seq([hd_exp]@[tl_exp]) *)
 
 
-  (* | Pair(Symbol "or", Nil) ->  *)
+  
   | Pair(Symbol "or", s) -> 
       let rec expr_list lst sexpr = match sexpr with
       | Nil -> lst
@@ -134,10 +134,7 @@ let rec tag_pareser sexpr = match sexpr with
       in 
       conds
 
-(*       
-      > (print-template '(define b 2))
-      Pair(Symbol "define", Pair(Symbol "b", Pair(Number (Fraction(2, 1)), Nil))) *)
-
+  (* TODO the parameter for the define after the var is applic and this is not good *)
   | Pair(Symbol "define", Pair(var, sexpr)) -> 
       let var_exp = tag_pareser var in
       let sexpr_exp = tag_pareser sexpr in
@@ -145,6 +142,30 @@ let rec tag_pareser sexpr = match sexpr with
         | Var(s) -> Def(var_exp,sexpr_exp) 
         | _ -> raise X_no_match in
       def_exp
+
+(* TODO the parameter for the SET! after the var is applic and this is not good *)
+  | Pair(Symbol "set!",Pair(var, tl)) ->
+    let var_exp = tag_pareser var in
+    let tl_exp = tag_pareser tl in
+    let set_exp = match var_exp with
+      | Var(s) -> Set(var_exp,tl_exp)
+      | _ -> raise X_no_match in
+    set_exp
+
+    | Pair(Symbol "begin", s) -> 
+    let rec expr_list lst sexpr = match sexpr with
+    | Nil -> lst
+    | Pair( Pair(Symbol "begin", Pair(s, rest1)), rest2) -> (expr_list (expr_list (lst@[(tag_pareser s)]) rest1) rest2)
+    | Pair(s ,rest) -> (expr_list (lst@[(tag_pareser s)]) rest)
+    | _ -> raise X_no_match
+    in
+    (* if (s==Nil) then Const(Sexpr(Bool(false))) else Or(expr_list [] s) *)
+    let conds = match s with
+    | Nil -> Const(Void)
+    | Pair(exp ,Nil) -> tag_pareser exp
+    | _ -> Seq(expr_list [] s)
+    in 
+    conds
 
   (* Applic MUST BE THE LAST*)
   | Pair(proc, params) -> 
