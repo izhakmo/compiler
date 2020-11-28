@@ -129,8 +129,9 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "define", Pair(var, sexpr)) -> 
     let var_exp = tag_pareser var in
     let sexpr_exp = tag_pareser sexpr in
-    let def_exp = match var_exp, sexpr_exp with 
-      | Var(s),Applic(app, lic) -> Def(var_exp,app) 
+    let def_exp = match var_exp with 
+      (* | Var(s),Applic(app, lic) -> Def(var_exp,app)  *)
+      | Var(s)-> Def(var_exp,sexpr_exp) 
       | _ -> raise X_no_match in
     def_exp
 
@@ -138,8 +139,8 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "set!",Pair(var, tl)) ->
     let var_exp = tag_pareser var in
     let tl_exp = tag_pareser tl in
-    let set_exp = match var_exp,tl_exp with
-      | Var(s),Applic(app, lic) -> Set(var_exp,app)
+    let set_exp = match var_exp with
+      | Var(s) -> Set(var_exp,tl_exp)
       | _ -> raise X_no_match in
     set_exp
 
@@ -193,8 +194,8 @@ let rec tag_pareser sexpr = match sexpr with
         let lambda_vars = vars_exps params in
         let lambda_vals = vals_exps params in
         let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
-        (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array) *)
-        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))])
+        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
+        (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))]) *)
 (* 
         > (print-template '(let (()) c ))
         Pair(Symbol "let", Pair(Pair(Nil, Nil), Pair(Symbol "c", Nil)))
@@ -203,7 +204,11 @@ let rec tag_pareser sexpr = match sexpr with
         > (print-template '(let ((a 3) (b 4)) c ))
         Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Pair(Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil)), Nil)), Pair(Symbol "c", Nil))) *)
 
+(* 
+        (print-template '(define a 2))
+        Pair(Symbol "define", Pair(Symbol "a", Pair(Number (Fraction(2, 1)), Nil)))
 
+ *)
   (* Applic MUST BE THE LAST *)
   | Pair(Symbol(prim_op_OR_varRef), params) -> 
       let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
@@ -225,8 +230,8 @@ let rec tag_pareser sexpr = match sexpr with
 
   
  
-(* 
-  | Pair(proc, params) -> 
+
+  (* | Pair(proc, params) -> 
     let proc_exp = tag_pareser proc in
     let rec params_exp lst sexpr = match sexpr with
       | Nil -> lst
@@ -235,6 +240,8 @@ let rec tag_pareser sexpr = match sexpr with
     in
     Applic(proc_exp, (params_exp [] params)) *)
 
+  | Pair(some, Nil) -> tag_pareser some
+  (* | Pair(some, more) ->  tag_pareser more *)
 
   | _ -> raise X_no_match;;
 
