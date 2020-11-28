@@ -171,19 +171,18 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 
-
       
     | Pair(Symbol "let", Pair( params, body)) -> 
-        let rec params_exps params = match params with
-          | Nil -> Nil
+        let rec vars_exps params = match params with
+          | Pair(Nil, Nil) -> Nil
           | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(var_sexp,Nil)
-          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(var_sexp, (params_exps ribs))
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(var_sexp, (vars_exps ribs))
           | _ -> raise X_no_match
         in
         let rec vals_exps params = match params with
-          | Nil -> Nil
-          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(val_sexp,Nil)
-          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(val_sexp, (vals_exps ribs))
+          | Pair(Nil, Nil) -> Nil
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(val_sexp,Nil)
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(val_sexp, (vals_exps ribs))
           | _ -> raise X_no_match
         in
         let rec app_params lst sexpr = match sexpr with
@@ -191,107 +190,56 @@ let rec tag_pareser sexpr = match sexpr with
           | Pair(s ,rest) -> (app_params (lst@[(tag_pareser s)]) rest)
           | _ -> raise X_no_match
         in
-        let lambda_params = params_exps params in
-        let app_vals = vals_exps params in
-        let some_other_lies_in_array = (app_params [] app_vals) in
-        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_params,body)))) , some_other_lies_in_array)
-
-        Applic (LambdaSimple (["a"], Var "c"),  [Applic (Const (Sexpr (Number (Fraction (3, 1)))), [])])
-
-        (* Applic((tag_pareser Pair(Symbol "lambda", Pair(params_exps params, body))), (app_params [] (vals_exps params))) *)
-
-
-
-        (* Pair(Symbol "lambda", Pair(params_exps, Pair(body, Nil)))
-
-        (let ((a 3) (b 4)) (+ a b)) ->
-        Applic(lambda (a b) (+ a b), [3,4])
-        ((lambda (a b) (+ a b)) 3 4)
-      
-        Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil))), Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil)))
-        Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil))), Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil)))
-       
-      (let ((a 3)) c )
-      
-      Pair(Symbol "let", Pair(
-                                Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Nil), 
-                                Pair(Symbol "c", Nil)
-                              ))
-      
-      Pair(Symbol "let", Pair(    
-                                Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), 
-                                Pair(Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil)), Nil)), 
-                                Pair(Symbol "c", Nil)))
-       *)
-        
+        let lambda_vars = vars_exps params in
+        let lambda_vals = vals_exps params in
+        let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
+        (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array) *)
+        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))])
+(* 
+        > (print-template '(let (()) c ))
+        Pair(Symbol "let", Pair(Pair(Nil, Nil), Pair(Symbol "c", Nil)))
+        > (print-template '(let ((a 3)) c ))
+        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Nil), Pair(Symbol "c", Nil)))
+        > (print-template '(let ((a 3) (b 4)) c ))
+        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Pair(Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil)), Nil)), Pair(Symbol "c", Nil))) *)
 
 
-
-
-
-
-
-
-
-
-
-  (* Applic MUST BE THE LAST*)
-  | Pair(proc, params) -> 
-      let proc_exp = tag_pareser proc in
+  (* Applic MUST BE THE LAST *)
+  | Pair(Symbol(prim_op_OR_varRef), params) -> 
+      let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
       let rec params_exp lst sexpr = match sexpr with
         | Nil -> lst
         | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
         | _ -> raise X_no_match
       in
-      Applic(proc_exp, (params_exp [] params));;
+      Applic(proc_exp, (params_exp [] params))
 
-  (* | _ -> raise X_no_match;; *)
+  | Pair(Pair(Symbol "lambda",lambdas_params_and_body), params) -> 
+    let proc_exp = tag_pareser (Pair(Symbol "lambda",lambdas_params_and_body)) in
+    let rec params_exp lst sexpr = match sexpr with
+      | Nil -> lst
+      | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
+      | _ -> raise X_no_match
+    in
+    Applic(proc_exp, (params_exp [] params))
+
+  
+ 
+(* 
+  | Pair(proc, params) -> 
+    let proc_exp = tag_pareser proc in
+    let rec params_exp lst sexpr = match sexpr with
+      | Nil -> lst
+      | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
+      | _ -> raise X_no_match
+    in
+    Applic(proc_exp, (params_exp [] params)) *)
+
+
+  | _ -> raise X_no_match;;
 
   
 
-
-
-
-    (* (print-template '(+ 4 5) )
-    (Pair(Symbol "+", Pair(Number (Fraction(4, 1)), Pair(Number (Fraction(5, 1)), Nil)))) *)
-    
-    (* > (print-template '((lambda (a) a) 42 ))
-    (Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Nil), Pair(Symbol "a", Nil))), Pair(Number (Fraction(42, 1)), Nil))) *)
-
- 
-  (* tag_pareser (Symbol "T");;
-
-
-  > (print-template '(lambda () #t) )
-  Pair(Symbol "lambda", Pair(Nil, Pair(Bool true, Nil)))
-
-  (print-template '(lambda (a b) a) )
-  (Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)),
-    Pair(Symbol "a", Nil))))
-  
-
-
-  (print-template '(lambda (n1) n1 #t 42) )
-Pair(Symbol "lambda", Pair(
-  Pair(Symbol "n1", Nil),
-  Pair(Symbol "n1", Pair(Bool true, Pair(Number (Fraction(42, 1)), Nil)))))
-
-(lambda (a b) a b)
- 
-(Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Symbol "a", Pair(Symbol "b", Nil)))))
-
-
-
-  (print-template '(lambda (a b c d) a))
-  Pair(Symbol "lambda", 
-                    Pair(
-                          Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Pair(Symbol "d", Nil)))),           
-                          Pair(Symbol "a", Nil)
-                        ))
-
-(print-template '(lambda () (+ 1 2)))
-Pair(Symbol "lambda", Pair(Nil, 
-                          Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
 
 
 let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
