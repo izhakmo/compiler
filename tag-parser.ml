@@ -256,12 +256,13 @@ and implicit_seq sexpr =
   | _ -> raise X_no_match
   in
   let conds = match sexpr with
+  (* maybe this one should not be seq but this way only works *)
     | Pair(some ,Nil) -> Seq([(tag_pareser some)])
     | _ -> Seq(implicit [] sexpr)
     in 
     conds;;
 
-  (* (print-template '(lambda (a b) #t #f #t a ))
+  (* (print-template '(lambda () #t #f #t a ))
   Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Bool true, Pair(Bool false, Pair(Bool true, Pair(Symbol "a", Nil)))))) *)
   
 
@@ -275,7 +276,35 @@ end;; (* struct Tag_Parser *)
 open Tag_Parser;;
 
 
+(* 
+> (print-template '(lambda () a))
+Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "a", Nil)))
+> (print-template '(lambda () (+)))
+Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Nil), Nil))) *)
+
+
+(* 
+
+(print-template '(lambda (b . c) (+ 23 12)  ))
+Pair(Symbol "lambda", Pair(Pair(Symbol "b", Nil), Pair(Pair(Symbol "+", Pair(Number (Fraction(23, 1)), Pair(Number (Fraction(12, 1)), Nil))), Nil)))
+
+
+(* 
+Pair(Symbol "lambda", Pair(Pair(Symbol "b", Symbol "c"), Pair(Pair(Symbol "+", Pair(Number (Fraction(23, 1)), Pair(Number (Fraction(12, 1)), Nil))), Nil)))
+ *)
+
+expr = LambdaSimple (["b"], Var "+")
+
+
+(print-template '(+ 1 2))
+Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
 
 
 
-
+expr =
+LambdaSimple (["b"],
+ Const
+  (Sexpr
+    (
+      Pair (Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil)
+    ))) *)
