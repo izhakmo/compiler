@@ -74,8 +74,14 @@ let reserved_specialform_list =
 
 let rec symbol_extract_fun lst sexpr = match sexpr with
   | Nil -> lst
-  | Pair(Symbol(s),rest) -> (symbol_extract_fun (lst@[s]) rest)
+  | Pair(Symbol(s),Symbol(end_of_list)) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) 
+                                            then (symbol_extract_fun (lst@[s]) (Symbol(end_of_list)))
+                                            else raise X_no_match
+  | Pair(Symbol(s),rest) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) then (symbol_extract_fun (lst@[s]) rest) else raise X_no_match
+  | Symbol(end_of_list) -> if(not ((List.mem end_of_list lst) || (List.mem end_of_list reserved_word_list))) then  (["define"; end_of_list]@lst) else raise X_no_match
   | _ -> raise X_no_match;;
+
+
 
   
 let rec tag_pareser sexpr = match sexpr with
@@ -101,15 +107,68 @@ let rec tag_pareser sexpr = match sexpr with
   
   (* | Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
 
-  (* lmabda opt *)
-  (* (* TODO =========== duplicates  ================================ *) ========== *)
+  
   | Pair(Symbol "lambda", Pair(params, body)) ->  
+        let params_string_list = (symbol_extract_fun [] params) in 
+        let bodies = (tag_pareser body) in
+        let lambda_exp = match params_string_list, bodies with
+          | [], _ -> 
+                if((List.length params_string_list) == 0) 
+                  then LambdaSimple(params_string_list, bodies) 
+                else if (String.equal (List.hd params_string_list) "define") 
+                  then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
+                else LambdaSimple(params_string_list, bodies) 
+          | _ , Applic(app,lic) -> 
+                if((List.length params_string_list) == 0) 
+                  then LambdaSimple(params_string_list, app) 
+                else if (String.equal (List.hd params_string_list) "define") 
+                  then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), app )
+                else LambdaSimple(params_string_list, app) 
+          | _, _ -> 
+                if((List.length params_string_list) == 0) 
+                  then LambdaSimple(params_string_list, bodies) 
+                else if (String.equal (List.hd params_string_list) "define") 
+                  then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
+                else LambdaSimple(params_string_list, bodies)
+          in
+        lambda_exp
+(* 
+        Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Number (Fraction(42, 1)), Nil)))
+        Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Symbol "moshe", Nil)))
+ *)
+        
+  (* | Pair(Symbol "lambda", Pair(params, body)) ->  
+        let params_string_list = (symbol_extract_fun [] params) in 
+        let bodies = (tag_pareser body) in
+        if((List.length params_string_list) == 0) 
+          then LambdaSimple(params_string_list, bodies) 
+        else if (String.equal (List.hd params_string_list) "define") 
+            then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
+        else LambdaSimple(params_string_list, bodies)  *)
+
+
+
+  (* | Pair(Symbol "lambda", Pair(Pair(params,), body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
         let bodies = (tag_pareser body) in
         let lambda_exp = match bodies with
           | Applic(app,lic) -> LambdaSimple(params_string_list, app)
           | _ -> raise X_no_match in
-            lambda_exp
+            lambda_exp *)
+    
+(* 
+            Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Number (Fraction(42, 1)), Nil)))
+ *)
+
+ (* (print-template '(lambda (. c) a)) *)
+ (* Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(42, 1)), Nil))) *)
+
+
+(* 
+ > (print-template '(lambda (a b . c) a))
+Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Symbol "a", Nil)))
+> (print-template '(lambda (a b c) a))
+Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Nil))), Pair(Symbol "a", Nil))) *)
 
 
   | Pair(Symbol "or", s) -> 
