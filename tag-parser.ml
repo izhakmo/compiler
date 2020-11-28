@@ -111,21 +111,11 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
         let bodies = (implicit_seq body) in
-        let lambda_exp = match params_string_list with
-          | [] -> 
-                if((List.length params_string_list) == 0) 
-                  then LambdaSimple(params_string_list, bodies) 
+        if((List.length params_string_list) == 0) 
+                then LambdaSimple(params_string_list, bodies) 
                 else if (String.equal (List.hd params_string_list) "define") 
                   then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
-                else LambdaSimple(params_string_list, bodies) 
-          | _ -> 
-                if((List.length params_string_list) == 0) 
-                  then LambdaSimple(params_string_list, bodies) 
-                else if (String.equal (List.hd params_string_list) "define") 
-                  then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
-                else LambdaSimple(params_string_list, bodies)
-          in
-        lambda_exp
+                  else LambdaSimple(params_string_list, bodies)
 
 
 
@@ -268,37 +258,3 @@ let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
   
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
-
-
-(* 
-> (print-template '(lambda () a))
-Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "a", Nil)))
-> (print-template '(lambda () (+)))
-Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Nil), Nil))) *)
-
-
-(* 
-
-(print-template '(lambda (b . c) (+ 23 12)  ))
-Pair(Symbol "lambda", Pair(Pair(Symbol "b", Nil), Pair(Pair(Symbol "+", Pair(Number (Fraction(23, 1)), Pair(Number (Fraction(12, 1)), Nil))), Nil)))
-
-
-(* 
-Pair(Symbol "lambda", Pair(Pair(Symbol "b", Symbol "c"), Pair(Pair(Symbol "+", Pair(Number (Fraction(23, 1)), Pair(Number (Fraction(12, 1)), Nil))), Nil)))
- *)
-
-expr = LambdaSimple (["b"], Var "+")
-
-
-(print-template '(+ 1 2))
-Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
-
-
-
-expr =
-LambdaSimple (["b"],
- Const
-  (Sexpr
-    (
-      Pair (Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil)
-    ))) *)
