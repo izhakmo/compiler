@@ -111,20 +111,14 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
         let bodies = (implicit_seq body) in
-        let lambda_exp = match params_string_list, bodies with
-          | [], _ -> 
+        let lambda_exp = match params_string_list with
+          | [] -> 
                 if((List.length params_string_list) == 0) 
                   then LambdaSimple(params_string_list, bodies) 
                 else if (String.equal (List.hd params_string_list) "define") 
                   then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
                 else LambdaSimple(params_string_list, bodies) 
-          | _ , Applic(app,lic) -> 
-                if((List.length params_string_list) == 0) 
-                  then LambdaSimple(params_string_list, app) 
-                else if (String.equal (List.hd params_string_list) "define") 
-                  then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), app )
-                else LambdaSimple(params_string_list, app) 
-          | _, _ -> 
+          | _ -> 
                 if((List.length params_string_list) == 0) 
                   then LambdaSimple(params_string_list, bodies) 
                 else if (String.equal (List.hd params_string_list) "define") 
@@ -257,7 +251,7 @@ and implicit_seq sexpr =
   in
   let conds = match sexpr with
   (* maybe this one should not be seq but this way only works *)
-    | Pair(some ,Nil) -> Seq([(tag_pareser some)])
+    | Pair(some ,Nil) -> tag_pareser some
     | _ -> Seq(implicit [] sexpr)
     in 
     conds;;
