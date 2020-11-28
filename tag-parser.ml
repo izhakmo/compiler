@@ -47,6 +47,7 @@ exception X_syntax_error;;
 
 module type TAG_PARSER = sig
   val symbol_extract_fun : string list -> sexpr -> string list
+  (* val implicit_seq : expr list -> sexpr -> expr list *)
   val tag_pareser : sexpr -> expr
 
   val tag_parse_expressions : sexpr list -> expr list
@@ -83,6 +84,7 @@ let rec symbol_extract_fun lst sexpr = match sexpr with
 
 
 
+
   
 let rec tag_pareser sexpr = match sexpr with
   | Bool(s) -> Const(Sexpr(sexpr))
@@ -105,12 +107,10 @@ let rec tag_pareser sexpr = match sexpr with
       let then_exp = tag_pareser then_sexp in
       If(test_exp, then_exp, Const(Void))
   
-  (* | Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "+", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Nil))) *)
 
-  
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
-        let bodies = (tag_pareser body) in
+        let bodies = (implicit_seq body) in
         let lambda_exp = match params_string_list, bodies with
           | [], _ -> 
                 if((List.length params_string_list) == 0) 
@@ -132,43 +132,7 @@ let rec tag_pareser sexpr = match sexpr with
                 else LambdaSimple(params_string_list, bodies)
           in
         lambda_exp
-(* 
-        Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Number (Fraction(42, 1)), Nil)))
-        Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Symbol "moshe", Nil)))
- *)
-        
-  (* | Pair(Symbol "lambda", Pair(params, body)) ->  
-        let params_string_list = (symbol_extract_fun [] params) in 
-        let bodies = (tag_pareser body) in
-        if((List.length params_string_list) == 0) 
-          then LambdaSimple(params_string_list, bodies) 
-        else if (String.equal (List.hd params_string_list) "define") 
-            then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
-        else LambdaSimple(params_string_list, bodies)  *)
 
-
-
-  (* | Pair(Symbol "lambda", Pair(Pair(params,), body)) ->  
-        let params_string_list = (symbol_extract_fun [] params) in 
-        let bodies = (tag_pareser body) in
-        let lambda_exp = match bodies with
-          | Applic(app,lic) -> LambdaSimple(params_string_list, app)
-          | _ -> raise X_no_match in
-            lambda_exp *)
-    
-(* 
-            Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Number (Fraction(42, 1)), Nil)))
- *)
-
- (* (print-template '(lambda (. c) a)) *)
- (* Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(42, 1)), Nil))) *)
-
-
-(* 
- > (print-template '(lambda (a b . c) a))
-Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Symbol "c")), Pair(Symbol "a", Nil)))
-> (print-template '(lambda (a b c) a))
-Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Nil))), Pair(Symbol "a", Nil))) *)
 
 
   | Pair(Symbol "or", s) -> 
@@ -255,19 +219,8 @@ Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Ni
         let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
         Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
         (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))]) *)
-(* 
-        > (print-template '(let (()) c ))
-        Pair(Symbol "let", Pair(Pair(Nil, Nil), Pair(Symbol "c", Nil)))
-        > (print-template '(let ((a 3)) c ))
-        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Nil), Pair(Symbol "c", Nil)))
-        > (print-template '(let ((a 3) (b 4)) c ))
-        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil)), Pair(Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil)), Nil)), Pair(Symbol "c", Nil))) *)
 
-(* 
-        (print-template '(define a 2))
-        Pair(Symbol "define", Pair(Symbol "a", Pair(Number (Fraction(2, 1)), Nil)))
 
- *)
   (* Applic MUST BE THE LAST *)
   | Pair(Symbol(prim_op_OR_varRef), params) -> 
       let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
@@ -288,24 +241,29 @@ Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Pair(Symbol "c", Ni
     Applic(proc_exp, (params_exp [] params))
 
   
- 
-
-  (* | Pair(proc, params) -> 
-    let proc_exp = tag_pareser proc in
-    let rec params_exp lst sexpr = match sexpr with
-      | Nil -> lst
-      | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
-      | _ -> raise X_no_match
-    in
-    Applic(proc_exp, (params_exp [] params)) *)
 
   | Pair(some, Nil) -> tag_pareser some
-  (* | Pair(some, more) ->  tag_pareser more *)
-
-  | _ -> raise X_no_match;;
-
   
 
+  | _ -> raise X_no_match
+
+  
+  (* implicit sequences mustcontain at least one element. *)
+and implicit_seq sexpr = 
+  let rec implicit lst sexpr = match sexpr with
+  | Pair(some, Nil) ->  (lst@[(tag_pareser some)])
+  | Pair(some, more) -> (implicit (lst@[(tag_pareser some)]) more)
+  | _ -> raise X_no_match
+  in
+  let conds = match sexpr with
+    | Pair(some ,Nil) -> Seq([(tag_pareser some)])
+    | _ -> Seq(implicit [] sexpr)
+    in 
+    conds;;
+
+  (* (print-template '(lambda (a b) #t #f #t a ))
+  Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Bool true, Pair(Bool false, Pair(Bool true, Pair(Symbol "a", Nil)))))) *)
+  
 
 
 let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
@@ -315,4 +273,9 @@ let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
   
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
+
+
+
+
+
 
