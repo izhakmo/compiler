@@ -106,7 +106,29 @@ let rec tag_pareser sexpr = match sexpr with
       let test_exp = tag_pareser test_sexp in
       let then_exp = tag_pareser then_sexp in
       If(test_exp, then_exp, Const(Void))
-  
+
+
+(* 
+(* ====================== COND ======================================== *)
+
+      (print-template '(cond (#f 1 2) (#t 3 4)))
+      Pair(Symbol "cond", Pair(Pair(Bool false, 
+                                        Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
+                               Pair(Pair(Bool true,
+                                        Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil)))
+
+(* CONVERT TO IF *)
+      (print-template '(if #f (begin 1 2) (if #t (begin 3 4))))
+    Pair(Symbol "if", Pair(Bool false,
+                          Pair(Pair(Symbol "begin", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
+                          Pair(Pair(Symbol "if", Pair(Bool true,
+                                                     Pair(Pair(Symbol "begin", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))),
+                          Nil))), Nil))))
+                                        
+(* ========================================================================= *)
+
+  | Pair(Symbol "cond", ribs) ->
+   *)
 
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
