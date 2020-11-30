@@ -108,27 +108,104 @@ let rec tag_pareser sexpr = match sexpr with
       If(test_exp, then_exp, Const(Void))
 
 
-(* 
 (* ====================== COND ======================================== *)
+(* *
+
+      > (print-template '(if #f 1 2))
+      Pair(Symbol "if", Pair(Bool false, Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))))
+
+
+
 
       (print-template '(cond (#f 1 2) (#t 3 4)))
+
+      Pair(Symbol "cond", Pair(Pair(Bool false, Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil)))
+
+If (Const (Sexpr (Bool false)),
+ Seq
+  [Const (Sexpr (Number (Fraction (1, 1))));
+   Const (Sexpr (Number (Fraction (2, 1))))],
+ If (Const (Sexpr (Bool true)),
+  Seq
+   [Const (Sexpr (Number (Fraction (3, 1))));
+    Const (Sexpr (Number (Fraction (4, 1))))],
+  Const Void))
+
+
+  
+
+      Pair(Symbol "cond", Pair(Pair(Bool false,Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
+                                    , Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), 
+                                    Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
+
+
+      [(#f 1 2) ;(#f 8 9); (#t 3 4)]
+
+      Pair(Symbol "cond", Pair(Pair(Bool false,
+                                     Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Pair(Pair(Bool false, Pair(Number (Fraction(8, 1)), Pair(Number (Fraction(9, 1)), Nil))), Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
+
+
+
+
+
       Pair(Symbol "cond", Pair(Pair(Bool false, 
                                         Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
                                Pair(Pair(Bool true,
                                         Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil)))
 
 (* CONVERT TO IF *)
-      (print-template '(if #f (begin 1 2) (if #t (begin 3 4))))
+      (print-template '(if #f (begin 1 ) (if #t (begin 3 4))))
     Pair(Symbol "if", Pair(Bool false,
                           Pair(Pair(Symbol "begin", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
                           Pair(Pair(Symbol "if", Pair(Bool true,
                                                      Pair(Pair(Symbol "begin", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))),
                           Nil))), Nil))))
                                         
+
+      (print-template '(if #f (begin 1) 2) (if #t (begin 3) 4)))
 (* ========================================================================= *)
 
-  | Pair(Symbol "cond", ribs) ->
-   *)
+Pair(Symbol "cond", Pair(Pair(Bool false,Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
+, Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), 
+Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
+
+ *)
+
+
+
+  | Pair(Symbol "cond", cases) -> 
+    let rec cond_exp case = match case with
+      | Pair(Pair(Symbol "else", else_sexp),Nil) -> 
+                      (Pair(Symbol "begin", else_sexp))
+      | Pair(Pair(     value,      Pair(Symbol "=>", function_sexp                ))      , recursive_more) ->
+        (* Pair(Pair(Symbol "a",      Pair(Symbol "=>", Pair(Symbol "b", Nil)        ))      , Nil           ) *)
+
+                        
+              (Pair(Symbol("let"), Pair(
+                              Pair(Pair(Symbol("value"), value), 
+                              Pair( Pair(Symbol("f"), Pair(Pair(Symbol("lambda"), Pair(Nil,function_sexp )), Nil)),
+                              Pair(Pair(Symbol("rest"), Pair(Pair(Symbol("lambda"), Pair(Nil, recursive_more)), Nil)), Nil))), 
+
+                              Pair(Pair(Symbol("if"), Pair(Symbol("value"), Pair(Pair(Pair(Symbol("f"), Nil), 
+                              Pair(Symbol("value"), Nil)), Pair(Pair(Symbol ("rest"), Nil), Nil)))), Nil)
+              )))
+
+      | Pair(Pair(test_sexp, then_sexp), Pair(Pair(Symbol "else", else_sexp),Nil)) ->
+                       (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair(Pair(Symbol "begin", else_sexp),Nil)  )))) 
+      | Pair(Pair(test_sexp, then_sexp), Nil) -> 
+                       (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Nil )))) 
+
+
+      | Pair(Pair(test_sexp, then_sexp), recursive_more) ->
+                       (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair((cond_exp recursive_more)        ,Nil) ))))
+      | _ -> raise X_no_match
+      
+                       
+      in (tag_pareser (cond_exp cases))
+
+
+  (* ===================================================================================== *)
+   
 
   | Pair(Symbol "lambda", Pair(params, body)) ->  
         let params_string_list = (symbol_extract_fun [] params) in 
@@ -207,12 +284,14 @@ let rec tag_pareser sexpr = match sexpr with
           | Pair(Nil, Nil) -> Nil
           | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(var_sexp,Nil)
           | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(var_sexp, (vars_exps ribs))
+          
           | _ -> raise X_no_match
         in
         let rec vals_exps params = match params with
           | Pair(Nil, Nil) -> Nil
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(val_sexp,Nil)
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(val_sexp, (vals_exps ribs))
+          | _ -> raise X_syntax_error
           | _ -> raise X_no_match
         in
         let rec app_params lst sexpr = match sexpr with
