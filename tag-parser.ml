@@ -94,7 +94,7 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "quote", Pair(sexpr, Nil)) -> Const(Sexpr(sexpr))
   | Nil -> Const(Void)
 
-  | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else raise X_no_match
+  | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else  raise X_no_match
   
   | Pair(Symbol "if", Pair(test_sexp, Pair(then_sexp, Pair(else_sexp, Nil)))) ->
       let test_exp = (tag_pareser test_sexp) in
@@ -177,18 +177,27 @@ Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 
     let rec cond_exp case = match case with
       | Pair(Pair(Symbol "else", else_sexp),Nil) -> 
                       (Pair(Symbol "begin", else_sexp))
-      | Pair(Pair(     value,      Pair(Symbol "=>", function_sexp                ))      , recursive_more) ->
-        (* Pair(Pair(Symbol "a",      Pair(Symbol "=>", Pair(Symbol "b", Nil)        ))      , Nil           ) *)
+      | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , recursive_more) ->
+                                            
+                      (Pair(Symbol "let", Pair(
+                        Pair(Pair(Symbol "value", Pair(value, Nil)),
+                        Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(function_sexp, Nil))), Nil)),
+                        Pair(Pair(Symbol "rest", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(recursive_more, Nil))), Nil)), Nil))),
+                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
 
-                        
-              (Pair(Symbol("let"), Pair(
-                              Pair(Pair(Symbol("value"), value), 
-                              Pair( Pair(Symbol("f"), Pair(Pair(Symbol("lambda"), Pair(Nil,function_sexp )), Nil)),
-                              Pair(Pair(Symbol("rest"), Pair(Pair(Symbol("lambda"), Pair(Nil, recursive_more)), Nil)), Nil))), 
+(* 
+                              (print-template '(let ((value 1) (f (lambda () 2)) (rest (lambda () 3))) (if v
+                              alue (f value) (rest))))
+                              
+                      (Pair(Symbol "let", Pair(
+                        Pair(Pair(Symbol "value", Pair(Number (Fraction(1, 1)), Nil)),
+                        Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(2, 1)), Nil))), Nil)),
+                        Pair(Pair(Symbol "rest", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(3, 1)), Nil))), Nil)), Nil))),
+                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
+ *)
 
-                              Pair(Pair(Symbol("if"), Pair(Symbol("value"), Pair(Pair(Pair(Symbol("f"), Nil), 
-                              Pair(Symbol("value"), Nil)), Pair(Pair(Symbol ("rest"), Nil), Nil)))), Nil)
-              )))
+
+              
 
       | Pair(Pair(test_sexp, then_sexp), Pair(Pair(Symbol "else", else_sexp),Nil)) ->
                        (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair(Pair(Symbol "begin", else_sexp),Nil)  )))) 
@@ -198,7 +207,8 @@ Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 
 
       | Pair(Pair(test_sexp, then_sexp), recursive_more) ->
                        (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair((cond_exp recursive_more)        ,Nil) ))))
-      | _ -> raise X_no_match
+                       
+                       | _ -> raise X_no_match
       
                        
       in (tag_pareser (cond_exp cases))
@@ -291,12 +301,15 @@ Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 
           | Pair(Nil, Nil) -> Nil
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(val_sexp,Nil)
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(val_sexp, (vals_exps ribs))
-          | _ -> raise X_syntax_error
+          
           | _ -> raise X_no_match
+
+
         in
         let rec app_params lst sexpr = match sexpr with
           | Nil -> lst
           | Pair(s ,rest) -> (app_params (lst@[(tag_pareser s)]) rest)
+          
           | _ -> raise X_no_match
         in
         let lambda_vars = vars_exps params in
@@ -304,6 +317,19 @@ Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 
         let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
         Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
         (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))]) *)
+
+(* 
+
+        (Pair(Symbol("let"), Pair(
+          Pair(Symbol("value"), Pair(Symbol "a", Nil)), 
+          Pair(Pair(Symbol("f"), Pair(Pair(Symbol("lambda"), Pair(Nil,Symbol "b" )), Nil)), 
+          Pair(Pair(Symbol("rest"), Pair(Pair(Symbol("lambda"), Pair(Nil, Nil)), Nil)),
+
+
+          Pair(Pair(Symbol("if"), Pair(Symbol("value"), Pair(Pair(Pair(Symbol("f"), Nil), 
+          Pair(Symbol("value"), Nil)), Pair(Pair(Symbol ("rest"), Nil), Nil)))), Nil))))))
+
+ *)
 
 
   (* Applic MUST BE THE LAST *)
