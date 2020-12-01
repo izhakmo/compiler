@@ -109,123 +109,7 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 (* ====================== COND ======================================== *)
-(* *
 
-      > (print-template '(if #f 1 2))
-      Pair(Symbol "if", Pair(Bool false, Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))))
-
-
-
-
-      (print-template '(cond (#f 1 2) (#t 3 4)))
-
-      Pair(Symbol "cond", Pair(Pair(Bool false, Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil)))
-
-If (Const (Sexpr (Bool false)),
- Seq
-  [Const (Sexpr (Number (Fraction (1, 1))));
-   Const (Sexpr (Number (Fraction (2, 1))))],
- If (Const (Sexpr (Bool true)),
-  Seq
-   [Const (Sexpr (Number (Fraction (3, 1))));
-    Const (Sexpr (Number (Fraction (4, 1))))],
-  Const Void))
-
-
-  
-
-      Pair(Symbol "cond", Pair(Pair(Bool false,Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
-                                    , Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), 
-                                    Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
-
-
-      [(#f 1 2) ;(#f 8 9); (#t 3 4)]
-
-      Pair(Symbol "cond", Pair(Pair(Bool false,
-                                     Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))), Pair(Pair(Bool false, Pair(Number (Fraction(8, 1)), Pair(Number (Fraction(9, 1)), Nil))), Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
-
-
-
-
-
-      Pair(Symbol "cond", Pair(Pair(Bool false, 
-                                        Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
-                               Pair(Pair(Bool true,
-                                        Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil)))
-
-(* CONVERT TO IF *)
-      (print-template '(if #f (begin 1 ) (if #t (begin 3 4))))
-    Pair(Symbol "if", Pair(Bool false,
-                          Pair(Pair(Symbol "begin", Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil))),
-                          Pair(Pair(Symbol "if", Pair(Bool true,
-                                                     Pair(Pair(Symbol "begin", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))),
-                          Nil))), Nil))))
-                                        
-
-      (print-template '(if #f (begin 1) 2) (if #t (begin 3) 4)))
-(* ========================================================================= *)
-
-Pair(Symbol "cond", Pair(Pair(Bool false,Pair(Number (Fraction(1, 1)), Pair(Number (Fraction(2, 1)), Nil)))
-, Pair(Pair(Bool true, Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), 
-Pair(Pair(Symbol "else", Pair(Number (Fraction(3, 1)), Pair(Number (Fraction(4, 1)), Nil))), Nil))))
-
- *)
- (* (cond         ((zero? n) (f x) (g y))
-               ((h? x) => (p q))
-              (else(h x y) (g x))
-              ((q? y) (p x) (q y))
-)
-
-
-Pair(Symbol "cond", Pair(Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Pair(Symbol "f", Pair(Symbol "x", Nil)), Pair(Pair(Symbol "g", Pair(Symbol "y", Nil)), Nil))), Pair(Pair(Pair(Symbol "h?", Pair(Symbol "x", Nil)), Pair(Symbol "=>", Pair(Pair(Symbol "p", Pair(Symbol "q", Nil)), Nil))), 
-                      Pair(Pair(Symbol "else", Pair(Pair(Symbol "h", Pair(Symbol "x", Pair(Symbol "y", Nil))), Pair(Pair(Symbol "g", Pair(Symbol "x", Nil)), Nil))), Nil))))
-
-
-
-
-(cond         ((zero? n) (f x) (g y)) ((h? x) => (p q)))
-> (print-template '((cond         ((zero? n) (f x) (g y)))))
-Pair(Pair(Symbol "cond", Pair(Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Pair(Symbol "f", Pair(Symbol "x", Nil)), Pair(Pair(Symbol "g", Pair(Symbol "y", Nil)), Nil))), Nil)), Nil)
-> (print-template '(cond         ((zero? n) (f x) (g y)) ((h? x) => (p q))))
-Pair(Symbol "cond", Pair(Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Pair(Symbol "f", Pair(Symbol "x", Nil)), Pair(Pair(Symbol "g", Pair(Symbol "y", Nil)), Nil))), Pair(Pair(Pair(Symbol "h?", Pair(Symbol "x", Nil)), Pair(Symbol "=>", Pair(Pair(Symbol "p", Pair(Symbol "q", Nil)), Nil))), Nil)))
-
-
-If (Applic (Var "zero?", [Var "n"]),   
-  Seq [Applic (Var "f", [Var "x"]); Applic (Var "g", [Var "y"])],                                    
- Applic
-  (LambdaSimple (["value"; "f"; "rest"],
-    If (Var "value", Applic (Var "f", [Var "value"]), Applic (Var "rest", []))),
-  [Applic (Var "h?", [Var "x"]);
-   LambdaSimple ([], Applic (Var "p", [Var "q"]));
-   LambdaSimple ([], Const Void)]))
-
-
-(cond    (else (h x y) (g x)))
-Seq [Applic (Var "h", [Var "x"; Var "y"]); Applic (Var "g", [Var "x"])]
-
-
-(cond        ((h? x) => (p q)) ((zero? n) (f x) (g y)))
-
-(cond         ((zero? n) (f x) (g y))
-              (else(h x y) (g x)))
-
-              (cond        (else(h x y) (g x)) ((q? y) (p x) (q y))) *)
-
-
-              (cond         ((zero? n) (f x) (g y))
-              ((h? x) => (p q))
-             (else(h x y) (g x)))
-
-(* 
-                              (print-template '(let ((value 1) (f (lambda () 2)) (rest (lambda () 3))) (if v
-                              alue (f value) (rest))))
-                              
-                      (Pair(Symbol "let", Pair(
-                        Pair(Pair(Symbol "value", Pair(Number (Fraction(1, 1)), Nil)),
-                        Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(2, 1)), Nil))), Nil)),
-                        Pair(Pair(Symbol "rest", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Number (Fraction(3, 1)), Nil))), Nil)), Nil))),
-                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
- *)
 
 
 
@@ -233,7 +117,7 @@ Seq [Applic (Var "h", [Var "x"; Var "y"]); Applic (Var "g", [Var "x"])]
 
   | Pair(Symbol "cond", cases) -> 
     let rec cond_exp case = match case with
-      | Pair(Pair(Symbol "else", else_sexp),Nil) -> 
+      | Pair(Pair(Symbol "else", else_sexp),_) -> 
                       (Pair(Symbol "begin", else_sexp))
       | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , recursive_more) ->
                                             
