@@ -275,25 +275,15 @@ let rec tag_pareser sexpr = match sexpr with
  | Pair(Symbol "let*", Pair( params, body)) -> 
       let rec let_options params = match params with
           | Nil -> 
-                            (Pair(Symbol "let", Pair( params, body)))
+                            tag_pareser (Pair(Symbol "let", Pair( params, body)))
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->
-                            (Pair(Symbol "let", Pair( params, body)))                   
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> 
-                            (Pair(Symbol "let", Pair(  Pair(var_sexp, Pair(val_sexp,Nil))
-                                                                  ,tag_pareser (Pair(Symbol "let*", Pair( ribs, body))))))
-          (* | (Pair(Symbol "let*", Pair( Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs), body))) -> 
-                            (Pair(Symbol "let", Pair(  Pair(var_sexp, Pair(val_sexp,Nil))
-                                                                  ,let_options (Pair(Symbol "let*", Pair( ribs, body)))))) *)
-          (* | _ -> raise X_no_match *)
-          in tag_pareser (let_options params)
-         
+                            tag_pareser (Pair(Symbol "let", Pair( params, body)))                   
+          | Pair(Pair(Symbol(var_string), Pair(val_sexp,Nil)), ribs) -> 
 
-(Pair(Pair(_, Pair (_, (Bool _|Pair (_, _)))),
-   _)|
-Pair (Pair (_, (Nil|Bool _)), _)|
-Pair ((Nil|Bool _|Number _|Char _|String _|Symbol _), _))
+          Applic(  LambdaSimple([var_string] , (tag_pareser (Pair(Symbol "let*", Pair( ribs, body)))))  , [(tag_pareser val_sexp)])
 
-
+          | _ -> raise X_no_match
+          in  (let_options params)
 
 
 (* ===================================================================================== *)
