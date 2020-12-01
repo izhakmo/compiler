@@ -95,7 +95,9 @@ let rec tag_pareser sexpr = match sexpr with
   | Nil -> Const(Void)
 
   | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else  raise X_no_match
-  
+
+  (* ===================================================================================== *)  
+
   | Pair(Symbol "if", Pair(test_sexp, Pair(then_sexp, Pair(else_sexp, Nil)))) ->
       let test_exp = (tag_pareser test_sexp) in
       let then_exp = (tag_pareser then_sexp) in
@@ -110,10 +112,6 @@ let rec tag_pareser sexpr = match sexpr with
 
 (* ====================== COND ======================================== *)
 
-
-
-
-(* ========================================================================= *)
 
   | Pair(Symbol "cond", cases) -> 
     let rec cond_exp case = match case with
@@ -154,7 +152,7 @@ let rec tag_pareser sexpr = match sexpr with
                   then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
                   else LambdaSimple(params_string_list, bodies)
 
-
+(* ===================================================================================== *)
 
   | Pair(Symbol "or", s) -> 
       let rec expr_list lst sexpr = match sexpr with
@@ -170,6 +168,8 @@ let rec tag_pareser sexpr = match sexpr with
       in 
       conds
 
+(* ===================================================================================== *)
+
   | Pair(Symbol "define", Pair(var, sexpr)) -> 
     let var_exp = tag_pareser var in
     let sexpr_exp = tag_pareser sexpr in
@@ -179,6 +179,7 @@ let rec tag_pareser sexpr = match sexpr with
       | _ -> raise X_no_match in
     def_exp
 
+    (* ===================================================================================== *)
 
   | Pair(Symbol "set!",Pair(var, tl)) ->
     let var_exp = tag_pareser var in
@@ -187,6 +188,8 @@ let rec tag_pareser sexpr = match sexpr with
       | Var(s) -> Set(var_exp,tl_exp)
       | _ -> raise X_no_match in
     set_exp
+
+(* ===================================================================================== *)
 
     | Pair(Symbol "begin", s) -> 
     let rec expr_list lst sexpr = match sexpr with
@@ -202,6 +205,8 @@ let rec tag_pareser sexpr = match sexpr with
     in 
     conds
 
+(* ===================================================================================== *)
+
     | Pair(Symbol "and", s) -> 
       let and_exp = match s with
         | Nil -> Const(Sexpr(Bool(true)))
@@ -214,19 +219,21 @@ let rec tag_pareser sexpr = match sexpr with
       in 
       and_exp
 
-
+(* ===================================================================================== *)
 
       
     | Pair(Symbol "let", Pair( params, body)) -> 
         let rec vars_exps params = match params with
-          | Pair(Nil, Nil) -> Nil
+          | Nil -> Nil  
+          (* | Pair(Nil, Nil) -> Nil *)
           | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(var_sexp,Nil)
           | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(var_sexp, (vars_exps ribs))
           
           | _ -> raise X_no_match
         in
         let rec vals_exps params = match params with
-          | Pair(Nil, Nil) -> Nil
+          | Nil -> Nil
+          (* | Pair(Nil, Nil) -> Nil *)
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(val_sexp,Nil)
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(val_sexp, (vals_exps ribs))
           
@@ -246,6 +253,8 @@ let rec tag_pareser sexpr = match sexpr with
         Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
         (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))]) *)
 
+
+
 (* 
 
         (Pair(Symbol("let"), Pair(
@@ -259,7 +268,35 @@ let rec tag_pareser sexpr = match sexpr with
 
  *)
 
+ (* ===================================================================================== *)
 
+(* problem in the let* mekunan *)
+      
+ | Pair(Symbol "let*", Pair( params, body)) -> 
+      let rec let_options params = match params with
+          | Nil -> 
+                            (Pair(Symbol "let", Pair( params, body)))
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->
+                            (Pair(Symbol "let", Pair( params, body)))                   
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> 
+                            (Pair(Symbol "let", Pair(  Pair(var_sexp, Pair(val_sexp,Nil))
+                                                                  ,tag_pareser (Pair(Symbol "let*", Pair( ribs, body))))))
+          (* | (Pair(Symbol "let*", Pair( Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs), body))) -> 
+                            (Pair(Symbol "let", Pair(  Pair(var_sexp, Pair(val_sexp,Nil))
+                                                                  ,let_options (Pair(Symbol "let*", Pair( ribs, body)))))) *)
+          (* | _ -> raise X_no_match *)
+          in tag_pareser (let_options params)
+         
+
+(Pair(Pair(_, Pair (_, (Bool _|Pair (_, _)))),
+   _)|
+Pair (Pair (_, (Nil|Bool _)), _)|
+Pair ((Nil|Bool _|Number _|Char _|String _|Symbol _), _))
+
+
+
+
+(* ===================================================================================== *)
   (* Applic MUST BE THE LAST *)
   | Pair(Symbol(prim_op_OR_varRef), params) -> 
       let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
@@ -270,6 +307,8 @@ let rec tag_pareser sexpr = match sexpr with
       in
       Applic(proc_exp, (params_exp [] params))
 
+      (* ===================================================================================== *)
+
   | Pair(Pair(Symbol "lambda",lambdas_params_and_body), params) -> 
     let proc_exp = tag_pareser (Pair(Symbol "lambda",lambdas_params_and_body)) in
     let rec params_exp lst sexpr = match sexpr with
@@ -279,13 +318,14 @@ let rec tag_pareser sexpr = match sexpr with
     in
     Applic(proc_exp, (params_exp [] params))
 
-  
+  (* ===================================================================================== *)
 
   | Pair(some, Nil) -> tag_pareser some
   
-
+(* ===================================================================================== *)
   | _ -> raise X_no_match
 
+  (* ===================================================================================== *)
   
   (* implicit sequences mustcontain at least one element. *)
 and implicit_seq sexpr = 
@@ -304,7 +344,8 @@ and implicit_seq sexpr =
   (* (print-template '(lambda () #t #f #t a ))
   Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Bool true, Pair(Bool false, Pair(Bool true, Pair(Symbol "a", Nil)))))) *)
   
-
+(* ===================================================================================== *)
+(* ===================================================================================== *)
 
 let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
 
