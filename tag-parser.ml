@@ -251,7 +251,6 @@ let rec tag_pareser sexpr = match sexpr with
         let lambda_vals = vals_exps params in
         let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
         Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
-        (* Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , [Const(Sexpr(lambda_vals))]) *)
 
 
 
@@ -285,6 +284,115 @@ let rec tag_pareser sexpr = match sexpr with
           | _ -> raise X_no_match
           in  (let_options params)
 
+
+
+  (* | Pair(Symbol "letrec", Pair(params, body)) ->
+      let rec let_options params = match params with
+          | Nil -> 
+                            tag_pareser (Pair(Symbol "let", Pair( params, body)))
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->
+                            tag_pareser (Pair(Symbol "let", Pair( params, body)))                   
+          | Pair(Pair(Symbol(var_string), Pair(val_sexp,Nil)), ribs) -> 
+
+          Applic(  
+            LambdaSimple([var_string] , Seq[Set(Symbol(var_string), (tag_pareser val_sexp) )  ,   (tag_pareser (Pair(Symbol "letrec", Pair( ribs, body))))  ])  , 
+          [(tag_pareser body)])
+
+          | _ -> raise X_no_match
+          in  (let_options params) *)
+
+
+
+
+  | Pair(Symbol "letrec", Pair(params, body)) ->
+    let rec vars_exps params = match params with
+          | Nil -> Nil  
+          (* | Pair(Nil, Nil) -> Nil *)
+          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(Pair(var_sexp,(Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)),Nil))
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(Pair(var_sexp, (Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)) ), (vars_exps ribs))
+          
+          | _ -> raise X_no_match
+        in
+        let rec vals_exps params = match params with
+          | Nil -> Nil
+          (* | Pair(Nil, Nil) -> Nil *)
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(Pair(Symbol "set!",Pair(var_sexp, val_sexp)),Nil)
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(Pair(Symbol "set!",Pair(var_sexp, val_sexp)), (vals_exps ribs))
+          
+          | _ -> raise X_no_match
+
+
+          in 
+          let let_vars = vars_exps params in
+          let set_bodies = vals_exps params in
+
+          Pair(Symbol "let", Pair(let_vars,Pair))
+
+
+
+(* 
+        in
+        let rec app_params lst sexpr = match sexpr with
+          | Nil -> lst
+          | Pair(s ,rest) -> (app_params (lst@[(tag_pareser s)]) rest)
+          
+          | _ -> raise X_no_match
+        in
+        let lambda_vars = vars_exps params in
+        let lambda_vals = vals_exps params in
+        let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
+        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
+ *)
+
+
+
+ Pair(Symbol "let", Pair(Pair(Pair(Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), Pair(Pair(Symbol "f2", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), Nil)), Pair(Pair(Symbol "set!", Pair(Symbol "f1", Pair(Number (Fraction(5, 1)), Nil))), Pair(Pair(Symbol "set!", Pair(Symbol "f2", Pair(Number (Fraction(42, 1)), Nil))), Pair(Pair(Symbol "let", Pair(Nil, Pair(Symbol "f1", Nil))), Nil)))))
+
+
+        
+(* 
+
+          Pair (Symbol "letrec",    
+                    Pair(Pair(Pair (Symbol "x", Pair (Pair (TaggedSexpr ("y", Pair (Symbol "quote", Pair (Nil, Nil))), Nil),  Nil)),  Nil),  Pair (Symbol "x", Nil)))
+
+          (letrec )
+
+          [Applic(LambdaSimple (["x"],Seq[Set (Var "x", Applic (Const (Sexpr (TaggedSexpr ("y", Nil))), []));Var "x"]),[Const (Sexpr (Symbol "whatever"))])]
+
+
+
+
+
+          
+          
+          [Pair (Symbol "letrec",Pair(Pair(Pair (Symbol "x",Pair(Pair (TaggedSexpr ("y", Pair (Symbol "quote", Pair (Nil, Nil))), Nil),Nil)),Pair(Pair (Symbol "y",Pair(Pair (Symbol "begin",Pair (Number (Int 1),Pair (Number (Int 2), Pair (Number (Int 3), Nil)))),Nil)),Nil)),Pair (Pair (Symbol "set", Pair (Symbol "x", Pair (Symbol "y", Nil))), Nil)))]
+          
+          [Applic(LambdaSimple (["x"; "y"],Seq[Set (Var "x", Applic (Const (Sexpr (TaggedSexpr ("y", Nil))), []));Set (Var "y",Seq[Const (Sexpr (Number (Int 1))); Const (Sexpr (Number (Int 2)));Const (Sexpr (Number (Int 3)))]);Applic (Var "set", [Var "x"; Var "y"])]),[Const (Sexpr (Symbol "whatever")); Const (Sexpr (Symbol "whatever"))])]
+          
+
+
+          (
+                        (lambda (fact)
+                                        (set! fact    (lambda (n)
+                                        (if (zero? n)
+                                          1 
+                                          ( * n (fact(- n 1))))) )
+                                                                            (fact5))
+          'whatever)
+
+
+          (letrec ( (fact  (lambda(n) (if(zero? n) 1 ( * n (fact (- n 1))))
+                  ))     )
+          (fact 5))
+ 
+
+
+          Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "fact", Nil), Pair(Pair(Symbol "set!", Pair(Symbol "fact", Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "if", Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Number (Fraction(1, 1)), Pair(Pair(Symbol "*", Pair(Symbol "n", Pair(Pair(Symbol "fact", Pair(Pair(Symbol "-", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil)), Nil))), Nil)))), Nil))), Nil))), Pair(Pair(Symbol "fact5", Nil), Nil)))), Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil))
+
+          Pair(Symbol "letrec", 
+          Pair(Pair(Pair(Symbol "fact", Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "if", Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Number (Fraction(1, 1)), Pair(Pair(Symbol "*", Pair(Symbol "n", Pair(Pair(Symbol "fact", Pair(Pair(Symbol "-", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil)), Nil))), Nil)))), Nil))), Nil)), Nil),
+           Pair(Pair(Symbol "fact", Pair(Number (Fraction(5, 1)), Nil)), Nil)))
+ *)
 
 (* ===================================================================================== *)
   (* Applic MUST BE THE LAST *)
