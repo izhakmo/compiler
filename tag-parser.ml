@@ -77,9 +77,9 @@ let rec symbol_extract_fun lst sexpr = match sexpr with
   | Nil -> lst
   | Pair(Symbol(s),Symbol(end_of_list)) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) 
                                             then (symbol_extract_fun (lst@[s]) (Symbol(end_of_list)))
-                                            else raise X_no_match
-  | Pair(Symbol(s),rest) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) then (symbol_extract_fun (lst@[s]) rest) else raise X_no_match
-  | Symbol(end_of_list) -> if(not ((List.mem end_of_list lst) || (List.mem end_of_list reserved_word_list))) then  (["define"; end_of_list]@lst) else raise X_no_match
+                                            else raise X_syntax_error
+  | Pair(Symbol(s),rest) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) then (symbol_extract_fun (lst@[s]) rest) else raise X_syntax_error
+  | Symbol(end_of_list) -> if(not ((List.mem end_of_list lst) || (List.mem end_of_list reserved_word_list))) then  (["define"; end_of_list]@lst) else raise X_syntax_error
   | _ -> raise X_no_match;;
 
 
@@ -298,58 +298,119 @@ let rec tag_pareser sexpr = match sexpr with
             LambdaSimple([var_string] , Seq[Set(Symbol(var_string), (tag_pareser val_sexp) )  ,   (tag_pareser (Pair(Symbol "letrec", Pair( ribs, body))))  ])  , 
           [(tag_pareser body)])
 
-          | _ -> raise X_no_match
+          | _ -> raise X_syntax_error
           in  (let_options params) *)
 
 
+(* 
+          > (print-template '(letrec ((f1 exp) (f2 exp2)) Exp))
+          Pair(Symbol "letrec", Pair(Pair(Pair(Symbol "f1", Pair(Symbol "exp", Nil)), Pair(Pair(Symbol "f2", Pair(Symbol "exp2", Nil)), Nil)), Pair(Symbol "Exp", Nil)))
+          
+
+
+          > (print-template '(letrec ((f1 exp) (f2 exp2)) Exp))
+          Pair(Symbol "letrec", 
+          Pair(Pair(Symbol "f1", Pair(Symbol "exp", Nil)), 
+          Pair(Pair(Symbol "f2", Pair(Symbol "exp2", Nil)),
+          Pair(Symbol "Exp", Nil))), Nil)
+   *)
+
+
+   
 
 
   | Pair(Symbol "letrec", Pair(params, body)) ->
-    let rec vars_exps params = match params with
+    let rec f_whatevers params = match params with
           | Nil -> Nil  
-          (* | Pair(Nil, Nil) -> Nil *)
-          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(Pair(var_sexp,(Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)),Nil))
-          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(Pair(var_sexp, (Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)) ), (vars_exps ribs))
+          | Pair(Nil, Nil) -> Nil            
+          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(Pair(var_sexp, Pair(Symbol "whatever",Nil)), Nil)
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(Pair(var_sexp, Pair(Symbol "whatever",Nil)), (f_whatevers ribs))
+                                                          
           
-          | _ -> raise X_no_match
+          | _ -> raise X_syntax_error
         in
-        let rec vals_exps params = match params with
+        let rec set_exps_init params = match params with
           | Nil -> Nil
           (* | Pair(Nil, Nil) -> Nil *)
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) -> Pair(Pair(Symbol "set!",Pair(var_sexp, val_sexp)),Nil)
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(Pair(Symbol "set!",Pair(var_sexp, val_sexp)), (vals_exps ribs))
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->  Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))), Nil)
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))), (set_exps_init ribs))
           
-          | _ -> raise X_no_match
+          | _ -> raise X_syntax_error
+
+        in
+        let final_empty_let = Pair(Symbol "let", Pair(Nil, body)) in 
+        let f_whatever_applied = f_whatevers params in
+        let set_exps_init_applied = set_exps_init params in
 
 
-          in 
-          let let_vars = vars_exps params in
-          let set_bodies = vals_exps params in
+(*         
+        > (print-template '(letrec ((a 1) (b 2)) (+ a b)))
+        > (print-template '(let ((a 1) (b 2)) (set! a 3) (set! b 4) (+ a b)))
+        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(1, 1)), Nil)), Pair(Pair(Symbol "b", Pair(Number (Fraction(2, 1)), Nil)), Nil)), Pair(Pair(Symbol "set!", Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil))), Pair(Pair(Symbol "set!", Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil))), Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil)))))
+        
 
-          Pair(Symbol "let", Pair(let_vars,Pair))
+
+        Pair (Symbol "letrec",
+            Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil),
+        Pair (Number (Fraction (1, 1)), Nil)))
 
 
+        Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
+     Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
+ [Const (Sexpr (Symbol "whatever"))]) *)
+
+
+
+        (* Pair(Symbol "let", 
+        Pair( Pair(Pair(Symbol "a", Pair(Number (Fraction(5, 1)), Nil)), Nil), 
+              Pair(Pair(Symbol "set!", Pair(Symbol "a", Pair(Number (Fraction(42, 1)), Nil))), 
+              Pair(Pair(Symbol "let", Pair(Nil, Pair(Symbol "a", Nil))), Nil)))
+            ) *)
+
+           (tag_pareser (Pair(Symbol "let", Pair( Pair(f_whatever_applied, Nil), Pair(set_exps_init_applied, Pair(final_empty_let, Nil))))))
+           (* (tag_pareser (Pair(Symbol "let", Pair( f_whatever_applied, Pair(final_empty_let, Nil))))) *)
+(* 
+        Pair(Symbol "let", 
+        Pair( Pair(f_whatever_applied, Nil), 
+              Pair(set_exps_init_applied, 
+              Pair(final_empty_let, Nil)))
+            ) *)
+
+            (* Applic
+            (LambdaSimple (["a"],
+              Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])),
+            [Var "whatever"])
+
+            Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
+     Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
+ [Const (Sexpr (Symbol "whatever"))])
+           
+   *)
 
 (* 
-        in
-        let rec app_params lst sexpr = match sexpr with
-          | Nil -> lst
-          | Pair(s ,rest) -> (app_params (lst@[(tag_pareser s)]) rest)
-          
-          | _ -> raise X_no_match
-        in
-        let lambda_vars = vars_exps params in
-        let lambda_vals = vals_exps params in
-        let lambda_vals_pairs_converted_to_array = (app_params [] lambda_vals) in
-        Applic((tag_pareser (Pair(Symbol "lambda",Pair(lambda_vars,body)))) , lambda_vals_pairs_converted_to_array)
- *)
+            Const
+            (Sexpr
+              (Pair (Symbol "let",
+                Pair
+                 (Pair
+                   (Pair
+                     (Pair (Symbol "f1",
+                       Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)),
+                     Pair
+                      (Pair (Symbol "f2",
+                        Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)),
+                      Nil)),
+                   Nil),
+                 Pair
+                  (Pair
+                    (Pair (Symbol "set!", Pair (Symbol "f1", Pair (Symbol "exp", Nil))),
+                    Pair
+                     (Pair (Symbol "set!", Pair (Symbol "f2", Pair (Symbol "exp2", Nil))),
+                     Nil)),
+                  Pair (Pair (Symbol "let", Pair (Nil, Pair (Symbol "Exp", Nil))), Nil))))))
+           
 
-
-
- Pair(Symbol "let", Pair(Pair(Pair(Symbol "f1", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), Pair(Pair(Symbol "f2", Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), Nil)), Pair(Pair(Symbol "set!", Pair(Symbol "f1", Pair(Number (Fraction(5, 1)), Nil))), Pair(Pair(Symbol "set!", Pair(Symbol "f2", Pair(Number (Fraction(42, 1)), Nil))), Pair(Pair(Symbol "let", Pair(Nil, Pair(Symbol "f1", Nil))), Nil)))))
-
-
-        
+         *)
 (* 
 
           Pair (Symbol "letrec",    
@@ -401,7 +462,7 @@ let rec tag_pareser sexpr = match sexpr with
       let rec params_exp lst sexpr = match sexpr with
         | Nil -> lst
         | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
-        | _ -> raise X_no_match
+        | _ -> raise X_syntax_error
       in
       Applic(proc_exp, (params_exp [] params))
 
@@ -412,7 +473,7 @@ let rec tag_pareser sexpr = match sexpr with
     let rec params_exp lst sexpr = match sexpr with
       | Nil -> lst
       | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
-      | _ -> raise X_no_match
+      | _ -> raise X_syntax_error
     in
     Applic(proc_exp, (params_exp [] params))
 
@@ -421,7 +482,7 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(some, Nil) -> tag_pareser some
   
 (* ===================================================================================== *)
-  | _ -> raise X_no_match
+  | _ -> raise X_syntax_error
 
   (* ===================================================================================== *)
   
@@ -430,7 +491,7 @@ and implicit_seq sexpr =
   let rec implicit lst sexpr = match sexpr with
   | Pair(some, Nil) ->  (lst@[(tag_pareser some)])
   | Pair(some, more) -> (implicit (lst@[(tag_pareser some)]) more)
-  | _ -> raise X_no_match
+  | _ -> raise X_syntax_error
   in
   let conds = match sexpr with
   (* maybe this one should not be seq but this way only works *)
