@@ -79,10 +79,10 @@ let rec symbol_extract_fun lst sexpr = match sexpr with
   | Nil -> lst
   | Pair(Symbol(s),Symbol(end_of_list)) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) 
                                             then (symbol_extract_fun (lst@[s]) (Symbol(end_of_list)))
-                                            else raise X_no_match
-  | Pair(Symbol(s),rest) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) then (symbol_extract_fun (lst@[s]) rest) else raise X_no_match
-  | Symbol(end_of_list) -> if(not ((List.mem end_of_list lst) || (List.mem end_of_list reserved_word_list))) then  (["define"; end_of_list]@lst) else raise X_no_match
-  | _ -> raise X_no_match;;
+                                            else raise X_syntax_error
+  | Pair(Symbol(s),rest) -> if(not ((List.mem s lst) || (List.mem s reserved_word_list))) then (symbol_extract_fun (lst@[s]) rest) else raise X_syntax_error
+  | Symbol(end_of_list) -> if(not ((List.mem end_of_list lst) || (List.mem end_of_list reserved_word_list))) then  (["define"; end_of_list]@lst) else raise X_syntax_error
+  | _ -> raise X_syntax_error;;
 
 
 
@@ -183,7 +183,7 @@ let rec tag_pareser sexpr = match sexpr with
       conds
 
 (* ===================================================================================== *)
-
+(* macro *)
   | Pair(Symbol "define", Pair(     Pair(Symbol(var), var_list ),   Pair(sexpr_plus, Nil)  )) -> 
           let name_exp = tag_pareser (Symbol(var)) in
           let def_exp = match name_exp with 
@@ -191,13 +191,13 @@ let rec tag_pareser sexpr = match sexpr with
             | Var(s)-> Def(name_exp,   tag_pareser  (Pair(Symbol "lambda", Pair(var_list, Pair(sexpr_plus, Nil)))))
             | _ -> raise X_no_match in
       def_exp
-
+(* original *)
   | Pair(Symbol "define", Pair(var, sexpr)) -> 
     let var_exp = tag_pareser var in
     let sexpr_exp = tag_pareser sexpr in
-    let def_exp = match var_exp with 
-      (* | Var(s),Applic(app, lic) -> Def(var_exp,app)  *)
-      | Var(s)-> Def(var_exp,sexpr_exp) 
+    let def_exp = match var_exp, sexpr_exp with 
+      | Var(s),Applic(app, []) -> Def(var_exp,app) 
+      | Var(s),_-> Def(var_exp,sexpr_exp) 
       | _ -> raise X_no_match in
     def_exp
 
@@ -217,6 +217,18 @@ let rec tag_pareser sexpr = match sexpr with
     set_exp
 
 (* ===================================================================================== *)
+
+(* (begin b (define x 10) (set b (+ x 15))) *)
+(* Seq[Var "b";
+Def (Var "x", Applic (Const (Sexpr (Number (Fraction (10, 1)))), []));
+Applic (Var "set",
+[Var "b";
+Applic (Var "+", [Var "x"; Const (Sexpr (Number (Fraction (15, 1))))])])]
+
+
+Pair(Symbol "begin", Pair(Symbol "b", Pair(Pair(Symbol "define", Pair(Symbol "x", Pair(Number (Fraction(10, 1)), Nil))), Pair(Pair(Symbol "set", Pair(Symbol "b", Pair(Pair(Symbol "+", Pair(Symbol "x", Pair(Number (Fraction(15, 1)), Nil))), Nil))), Nil))))
+ *)
+
 
     | Pair(Symbol "begin", s) -> 
     let rec expr_list lst sexpr = match sexpr with
@@ -348,7 +360,7 @@ let rec tag_pareser sexpr = match sexpr with
         let rec ans exp = match exp with 
           | Nil -> Pair(Symbol("quote"),Pair(Nil,Nil))
           | Pair(Symbol "unquote",Pair (exp, Nil)) -> exp
-          | Pair(Symbol "unquote-splicing",Pair (exp, Nil)) -> raise X_syntax_error
+          | Pair(Symbol "unquote-splicing",Pair (exp, Nil)) -> raise X_no_match
           | Symbol(s) -> Pair(Symbol ("quote"), Pair(Symbol(s), Nil))
           | Pair(Pair(Symbol "unquote-splicing", Pair (car, Nil)), cdr) ->
               Pair(Symbol("append"),Pair(car ,Pair((ans cdr),Nil)))
@@ -357,7 +369,7 @@ let rec tag_pareser sexpr = match sexpr with
 
           | Pair(car,cdr) -> 
               Pair(Symbol "cons", Pair(ans car, Pair(ans cdr, Nil)))
-          (* | _ -> raise X_syntax_error *)
+          (* | _ -> raise X_no_match *)
           | _ -> exp
         in
         tag_pareser (ans quasi_exp)
@@ -365,7 +377,7 @@ let rec tag_pareser sexpr = match sexpr with
 
 (* ===================================================================================== *)
   (* Applic MUST BE THE LAST *)
-  | Pair(Symbol(prim_op_OR_varRef), params) -> 
+  (* | Pair(Symbol(prim_op_OR_varRef), params) -> 
       let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
       let rec params_exp lst sexpr = match sexpr with
         | Nil -> lst
@@ -383,14 +395,33 @@ let rec tag_pareser sexpr = match sexpr with
       | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
       | _ -> raise X_no_match
     in
-    Applic(proc_exp, (params_exp [] params))
+    Applic(proc_exp, (params_exp [] params)) *)
 
   (* ===================================================================================== *)
+  
+  | Pair(applic, params) -> 
+      let proc_exp = tag_pareser applic in
+      let rec params_exp lst sexpr = match sexpr with
+        | Nil -> lst
+        | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
+        | _ -> raise X_no_match
+      in
+      Applic(proc_exp, (params_exp [] params))
+  
 
-  | Pair(some, Nil) -> tag_pareser some
+  (* | Pair(some, Nil) -> tag_pareser some *)
+
+
+  (* | Pair(some, Nil) -> 
+    let proc_exp = tag_pareser some in
+      let params_exp = [] 
+      in
+      Applic(proc_exp, params_exp) *)
   
 (* ===================================================================================== *)
-  | _ -> raise X_pareser
+  (* | _ -> raise X_pareser *)
+  (* | some -> Const(Sexpr(some)) *)
+
 
   (* ===================================================================================== *)
   
@@ -399,25 +430,31 @@ and implicit_seq sexpr =
   let rec implicit lst sexpr = match sexpr with
   | Pair(some, Nil) ->  (lst@[(tag_pareser some)])
   | Pair(some, more) -> (implicit (lst@[(tag_pareser some)]) more)
-  | _ -> raise X_no_match
+  | _ -> raise X_pareser
   in
   let conds = match sexpr with
   (* maybe this one should not be seq but this way only works *)
     | Pair(some ,Nil) -> tag_pareser some
+    (* | Pair(some ,Nil) -> (tag_pareser (Pair(some ,Nil))) *)
+
     | _ -> Seq(implicit [] sexpr)
     in 
     conds;;
 
-  (* (print-template '(lambda () #t #f #t a ))
-  Pair(Symbol "lambda", Pair(Pair(Symbol "a", Pair(Symbol "b", Nil)), Pair(Bool true, Pair(Bool false, Pair(Bool true, Pair(Symbol "a", Nil)))))) *)
   
 (* ===================================================================================== *)
 (* ===================================================================================== *)
 
-let tag_parse_expressions sexpr = raise X_not_yet_implemented;;
-
+let tag_parse_expressions sexpr = List.map tag_pareser sexpr;;
+(* let tag_parse_expressions sexpr = raise X_no_match;; *)
 
 
   
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
+
+
+
+Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "else",Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Nil)))),Nil)))
+
+Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),[Var "a"; LambdaSimple ([], Var "b");LambdaSimple ([],Seq[Const (Sexpr (Number (Fraction(1,1)))); Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
