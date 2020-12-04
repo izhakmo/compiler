@@ -206,48 +206,6 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 
-(*     
-    
-    exp_list_equal
-(Tag_Parser.tag_parse_expressions
-[Pair (Symbol "define",Pair (Pair (Symbol "returnonly", Pair (Symbol "x", Nil)),Pair(Pair (Symbol "begin",Pair (String "return only", Pair (Symbol "x", Nil))),Nil)))]
-)
-[Def (Var "returnonly",LambdaSimple (["x"], Seq [Const (Sexpr (String "return only")); Var "x"]))]
-;;
-
-
-exp_list_equal
-(Tag_Parser.tag_parse_expressions
-[Pair (Symbol "define",Pair(Pair (Symbol "applic",Pair (Symbol "fun",Pair (Symbol "a",Pair (Symbol "b",Pair (Symbol "c", Pair (Symbol "d", Pair (Symbol "e", Nil))))))),Pair(Pair (Symbol "fun",Pair (Symbol "a",Pair (Symbol "b",Pair (Symbol "c", Pair (Symbol "d", Pair (Symbol "e", Nil)))))),Nil)))]
-)
-[Def (Var "applic",LambdaSimple (["fun"; "a"; "b"; "c"; "d"; "e"],Applic (Var "fun", [Var "a"; Var "b"; Var "c"; Var "d"; Var "e"])))]
-;;
-
-exp_list_equal
-(Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "define",Pair(Pair (Symbol "if_fun",Pair (Symbol "if_test",Pair (Symbol "if_then", Pair (Symbol "if_else", Nil)))),Pair(Pair (Symbol "if",Pair (Symbol "if_test",Pair (Symbol "if_then", Pair (Symbol "if_else", Nil)))),Nil)))]
-)
-[Def (Var "if_fun",LambdaSimple (["if_test"; "if_then"; "if_else"],If (Var "if_test", Var "if_then", Var "if_else")))]
-;;
-
-exp_list_equal
-(Tag_Parser.tag_parse_expressions
-[Pair (Symbol "define",Pair (Pair (Symbol "pairing", Pair (Symbol "a", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "quote",Pair (Pair (Symbol "a", Pair (Symbol "b", Nil)), Nil)),Nil)))]
-)
-[Def (Var "pairing",LambdaSimple (["a"; "b"],Const (Sexpr (Pair (Symbol "a", Pair (Symbol "b", Nil))))))]
-;; *)
-
-    
-    (* Pair(Symbol "define", Pair(Pair(Symbol "square", Pair(Symbol "x", Nil)), Pair(Pair(Symbol "*", Pair(Symbol "x", Pair(Symbol "x", Nil))), Nil))) *)
-
-
-    (* (define (square x) ( * x x))
-      Pair(Symbol "define", Pair(Pair(Symbol "square", Pair(Symbol "x", Nil)), 
-                                 Pair(Pair(Symbol "*", Pair(Symbol "x", Pair(Symbol "x", Nil))), Nil)
-                                )
-          )
-    (define ⟨var⟩ (lambda⟨arglist⟩. (⟨expr⟩+)) ) *)
-
     (* ===================================================================================== *)
 
   | Pair(Symbol "set!",Pair(var, tl)) ->
@@ -390,141 +348,27 @@ exp_list_equal
 (* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
 (* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
 (* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
-(* 
-and quasiquote_expr sexpr =
-     match sexpr with
-    | Nil -> Pair(Symbol("quote"),Pair(Nil,Nil))
-    | Pair(Symbol("unquote"),Pair(sexpr,Nil)) -> sexpr
-    | Pair(Symbol("unquote-splicing"),Pair(sexpr,Nil)) -> raise X_syntax_error
-    | Symbol(sym) -> Pair(Symbol ("quote"), Pair(Symbol(sym), Nil))
-    | Pair(Pair(Symbol ("unquote-splicing"),Pair(sexpr , Nil)),b) ->
-      Pair(Symbol("append"),Pair(sexpr ,Pair((quasiquote_expr b),Nil)))
-    | Pair(a,Pair(Symbol ("unquote-splicing"),Pair(sexpr,Nil)))->
-      Pair(Symbol("cons"),Pair(quasiquote_expr a,Pair(sexpr,Nil)))
-    | Pair(car, cdr) -> Pair(Symbol "cons", Pair(quasiquote_expr car, Pair(quasiquote_expr cdr, Nil)))
-    |_ ->  sexpr; *)
 
-(*     
-    (print-template '`(,X))
-    Pair(Symbol "quasiquote", Pair(Pair(Pair(Symbol "unquote", Pair(Symbol "X", Nil)), Nil), Nil))
-   
-    Applic (Var "cons", [Var "x"; Const (Sexpr Nil)])
 
-    Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "a", Nil)),Pair (Symbol "b", Nil)),Nil))
 
-    Applic (Var "append",[Var "a";Applic (Var "cons", [Const (Sexpr (Symbol "b")); Const (Sexpr Nil)])]) *)
-
-  | Pair(Symbol "quasiquote",quasi_exp) -> 
+  | Pair(Symbol "quasiquote",Pair (quasi_exp, Nil)) -> 
         let rec ans exp = match exp with 
-          | Pair(Symbol "unquote",exp) -> tag_pareser exp
-          | Pair(Symbol "unquote-splicing",exp) -> raise X_syntax_error
-          | Nil -> Const(Sexpr (Nil))
-          | Symbol(s) -> Var(s)
-          (* | _ -> raise X_syntax_error *)
-          | Pair(Pair(Symbol "unquote-splicing", Pair (more, Nil)), cdr) ->
-              Applic (Var("append"),[(ans more) ;(ans cdr)])
-              (* tag_pareser (Pair (Symbol("append"),Pair((ans more),Pair(ans cdr)))) *)
-
-
-          | Pair(car ,Pair(Symbol "unquote-splicing", Pair (more, Nil))) -> 
-              Applic (Var("cons"),[(ans car) ;(ans more)])
-
-(*               
-              Pair(Symbol "cons", Pair(Symbol "b", Pair(Nil, Nil)))          
-                                         [Var "b"; Const (Sexpr Nil)]
-
-
-
-            Pair(Pair (Symbol "a",Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "b", Nil)), Nil)),Nil)
-            )
-            [Applic (Var "cons",[Const (Sexpr (Symbol "a"));Applic (Var "append", [Var "b"; Const (Sexpr Nil)])])] *)
-
-                                         
-          (* | Pair(car,Nil) -> (ans car)
-
-          | Pair(Nil , cdr) -> (ans cdr) *)
+          | Nil -> Pair(Symbol("quote"),Pair(Nil,Nil))
+          | Pair(Symbol "unquote",Pair (exp, Nil)) -> exp
+          | Pair(Symbol "unquote-splicing",Pair (exp, Nil)) -> raise X_syntax_error
+          | Symbol(s) -> Pair(Symbol ("quote"), Pair(Symbol(s), Nil))
+          | Pair(Pair(Symbol "unquote-splicing", Pair (car, Nil)), cdr) ->
+              Pair(Symbol("append"),Pair(car ,Pair((ans cdr),Nil)))
+          | Pair(car ,Pair(Symbol "unquote-splicing", Pair (cdr, Nil))) -> 
+              Pair(Symbol("cons"),Pair(ans car,Pair(cdr,Nil)))
 
           | Pair(car,cdr) -> 
-              Applic (Var("cons"),[(ans car) ;(ans cdr)])
+              Pair(Symbol "cons", Pair(ans car, Pair(ans cdr, Nil)))
           (* | _ -> raise X_syntax_error *)
-          | other_case -> tag_pareser other_case
+          | _ -> exp
         in
-        ans quasi_exp
+        tag_pareser (ans quasi_exp)
 
-(* 
-        Pair (Symbol "quasiquote",Pair (Pair (Pair (Symbol "unquote", Pair (Symbol "x", Nil)), Nil), Nil))  
-
-        Applic (Var "cons", [Var "x"; Const (Sexpr Nil)])
-        Applic (Var "cons", [Applic (Var "cons", [Applic (Var "x", []); Const (Sexpr Nil)]);
-  Const (Sexpr Nil)])
-
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair (Pair (Pair (Symbol "unquote", Pair (Symbol "x", Nil)), Nil), Nil))  ]
-  )
-  [Applic (Var "cons", [Var "x"; Const (Sexpr Nil)])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair (Pair (Symbol "a", Pair (Symbol "b", Nil)), Nil))  ]
-  )
-  [Applic (Var "cons",[Const (Sexpr (Symbol "a"));Applic (Var "cons", [Const (Sexpr (Symbol "b")); Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote", Pair (Symbol "a", Nil)),Pair (Symbol "b", Nil)),Nil))]
-  )
-  [Applic (Var "cons",[Var "a";Applic (Var "cons", [Const (Sexpr (Symbol "b")); Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Symbol "a",Pair (Pair (Symbol "unquote", Pair (Symbol "b", Nil)), Nil)),Nil))]
-  )
-  [Applic (Var "cons",[Const (Sexpr (Symbol "a"));Applic (Var "cons", [Var "b"; Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "a", Nil)),Pair (Symbol "b", Nil)),Nil))]
-  )
-  [Applic (Var "append",[Var "a";Applic (Var "cons", [Const (Sexpr (Symbol "b")); Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Symbol "a",Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "b", Nil)), Nil)),Nil))]
-  )
-  [Applic (Var "cons",[Const (Sexpr (Symbol "a"));Applic (Var "append", [Var "b"; Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote", Pair (Symbol "a", Nil)),Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "b", Nil)), Nil)),Nil))]
-  )
-  [Applic (Var "cons",[Var "a"; Applic (Var "append", [Var "b"; Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "a", Nil)),Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "b", Nil)), Nil)),Nil))]
-  )
-  [Applic (Var "append",[Var "a"; Applic (Var "append", [Var "b"; Const (Sexpr Nil)])])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "a", Nil)),Pair (Symbol "unquote", Pair (Symbol "b", Nil))),Nil))]
-  )
-  [Applic (Var "append", [Var "a"; Var "b"])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair (Pair (Symbol "unquote", Pair (Symbol "a", Nil)),Pair (Symbol "unquote-splicing", Pair (Symbol "b", Nil))),Nil))]
-  )
-  [Applic (Var "cons", [Var "a"; Var "b"])]
-  ;;
-  exp_list_equal
-  (Tag_Parser.tag_parse_expressions
-  [Pair (Symbol "quasiquote",Pair(Pair(Pair(Pair (Pair (Symbol "unquote-splicing", Pair (Symbol "a", Nil)), Nil),Nil),Nil),Nil))]
-  )
-  [Applic (Var "cons",[Applic (Var "cons",[Applic (Var "append", [Var "a"; Const (Sexpr Nil)]); Const (Sexpr Nil)]);Const (Sexpr Nil)])]
-  ;;
- *)
 
 (* ===================================================================================== *)
   (* Applic MUST BE THE LAST *)
