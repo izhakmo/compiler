@@ -117,6 +117,18 @@ let rec tag_pareser sexpr = match sexpr with
     let rec cond_exp case = match case with
       | Pair(Pair(Symbol "else", else_sexp),_) -> 
                       (Pair(Symbol "begin", else_sexp))
+
+
+
+      | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , Nil) ->
+                                            
+                      (Pair(Symbol "let", Pair(
+                        Pair(Pair(Symbol "value", Pair(value, Nil)),
+                        Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(function_sexp, Nil))), Nil)),
+                        Nil)),
+                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)),Nil))), Nil))))
+
+
       | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , recursive_more) ->
                                             
                       (Pair(Symbol "let", Pair(
@@ -286,34 +298,6 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 
-  (* | Pair(Symbol "letrec", Pair(params, body)) ->
-      let rec let_options params = match params with
-          | Nil -> 
-                            tag_pareser (Pair(Symbol "let", Pair( params, body)))
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->
-                            tag_pareser (Pair(Symbol "let", Pair( params, body)))                   
-          | Pair(Pair(Symbol(var_string), Pair(val_sexp,Nil)), ribs) -> 
-
-          Applic(  
-            LambdaSimple([var_string] , Seq[Set(Symbol(var_string), (tag_pareser val_sexp) )  ,   (tag_pareser (Pair(Symbol "letrec", Pair( ribs, body))))  ])  , 
-          [(tag_pareser body)])
-
-          | _ -> raise X_syntax_error
-          in  (let_options params) *)
-
-
-(* 
-          > (print-template '(letrec ((f1 exp) (f2 exp2)) Exp))
-          Pair(Symbol "letrec", Pair(Pair(Pair(Symbol "f1", Pair(Symbol "exp", Nil)), Pair(Pair(Symbol "f2", Pair(Symbol "exp2", Nil)), Nil)), Pair(Symbol "Exp", Nil)))
-          
-
-
-          > (print-template '(letrec ((f1 exp) (f2 exp2)) Exp))
-          Pair(Symbol "letrec", 
-          Pair(Pair(Symbol "f1", Pair(Symbol "exp", Nil)), 
-          Pair(Pair(Symbol "f2", Pair(Symbol "exp2", Nil)),
-          Pair(Symbol "Exp", Nil))), Nil)
-   *)
 
 
    
@@ -322,9 +306,9 @@ let rec tag_pareser sexpr = match sexpr with
   | Pair(Symbol "letrec", Pair(params, body)) ->
     let rec f_whatevers params = match params with
           | Nil -> Nil  
-          | Pair(Nil, Nil) -> Nil            
-          | Pair(Pair(var_sexp, val_sexp), Nil) -> Pair(Pair(var_sexp, Pair(Symbol "whatever",Nil)), Nil)
-          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair(Pair(var_sexp, Pair(Symbol "whatever",Nil)), (f_whatevers ribs))
+          (* | Pair(Nil, Nil) -> Nil             *)
+          | Pair(Pair(var_sexp, val_sexp), Nil) ->  Pair (var_sexp, Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil))
+          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair (Pair (var_sexp, Pair(Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)), (Pair((f_whatevers ribs),Nil)))
                                                           
           
           | _ -> raise X_syntax_error
@@ -332,128 +316,25 @@ let rec tag_pareser sexpr = match sexpr with
         let rec set_exps_init params = match params with
           | Nil -> Nil
           (* | Pair(Nil, Nil) -> Nil *)
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->  Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))), Nil)
+          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->  Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))),  Pair(Pair(Symbol "let", Pair(Nil, body)),Nil))
           | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))), (set_exps_init ribs))
           
           | _ -> raise X_syntax_error
 
         in
-        let final_empty_let = Pair(Symbol "let", Pair(Nil, body)) in 
+        (* let final_empty_let = Pair(Symbol "let", Pair(Nil, body)) in  *)
         let f_whatever_applied = f_whatevers params in
         let set_exps_init_applied = set_exps_init params in
 
+(* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
 
-(*         
-        > (print-template '(letrec ((a 1) (b 2)) (+ a b)))
-        > (print-template '(let ((a 1) (b 2)) (set! a 3) (set! b 4) (+ a b)))
-        Pair(Symbol "let", Pair(Pair(Pair(Symbol "a", Pair(Number (Fraction(1, 1)), Nil)), Pair(Pair(Symbol "b", Pair(Number (Fraction(2, 1)), Nil)), Nil)), Pair(Pair(Symbol "set!", Pair(Symbol "a", Pair(Number (Fraction(3, 1)), Nil))), Pair(Pair(Symbol "set!", Pair(Symbol "b", Pair(Number (Fraction(4, 1)), Nil))), Pair(Pair(Symbol "+", Pair(Symbol "a", Pair(Symbol "b", Nil))), Nil)))))
-        
-
-
-        Pair (Symbol "letrec",
-            Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil),
-        Pair (Number (Fraction (1, 1)), Nil)))
-
-
-        Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
-     Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
- [Const (Sexpr (Symbol "whatever"))]) *)
-
-
-
-        (* Pair(Symbol "let", 
-        Pair( Pair(Pair(Symbol "a", Pair(Number (Fraction(5, 1)), Nil)), Nil), 
-              Pair(Pair(Symbol "set!", Pair(Symbol "a", Pair(Number (Fraction(42, 1)), Nil))), 
-              Pair(Pair(Symbol "let", Pair(Nil, Pair(Symbol "a", Nil))), Nil)))
-            ) *)
-
-           (tag_pareser (Pair(Symbol "let", Pair( Pair(f_whatever_applied, Nil), Pair(set_exps_init_applied, Pair(final_empty_let, Nil))))))
-           (* (tag_pareser (Pair(Symbol "let", Pair( f_whatever_applied, Pair(final_empty_let, Nil))))) *)
-(* 
-        Pair(Symbol "let", 
-        Pair( Pair(f_whatever_applied, Nil), 
-              Pair(set_exps_init_applied, 
-              Pair(final_empty_let, Nil)))
-            ) *)
-
-            (* Applic
-            (LambdaSimple (["a"],
-              Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])),
-            [Var "whatever"])
-
-            Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
-     Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
- [Const (Sexpr (Symbol "whatever"))])
-           
-   *)
-
-(* 
-            Const
-            (Sexpr
-              (Pair (Symbol "let",
-                Pair
-                 (Pair
-                   (Pair
-                     (Pair (Symbol "f1",
-                       Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)),
-                     Pair
-                      (Pair (Symbol "f2",
-                        Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)),
-                      Nil)),
-                   Nil),
-                 Pair
-                  (Pair
-                    (Pair (Symbol "set!", Pair (Symbol "f1", Pair (Symbol "exp", Nil))),
-                    Pair
-                     (Pair (Symbol "set!", Pair (Symbol "f2", Pair (Symbol "exp2", Nil))),
-                     Nil)),
-                  Pair (Pair (Symbol "let", Pair (Nil, Pair (Symbol "Exp", Nil))), Nil))))))
-           
-
-         *)
-(* 
-
-          Pair (Symbol "letrec",    
-                    Pair(Pair(Pair (Symbol "x", Pair (Pair (TaggedSexpr ("y", Pair (Symbol "quote", Pair (Nil, Nil))), Nil),  Nil)),  Nil),  Pair (Symbol "x", Nil)))
-
-          (letrec )
-
-          [Applic(LambdaSimple (["x"],Seq[Set (Var "x", Applic (Const (Sexpr (TaggedSexpr ("y", Nil))), []));Var "x"]),[Const (Sexpr (Symbol "whatever"))])]
+        (tag_pareser(Pair(Symbol "let", Pair(f_whatever_applied,set_exps_init_applied))))
 
 
 
 
 
-          
-          
-          [Pair (Symbol "letrec",Pair(Pair(Pair (Symbol "x",Pair(Pair (TaggedSexpr ("y", Pair (Symbol "quote", Pair (Nil, Nil))), Nil),Nil)),Pair(Pair (Symbol "y",Pair(Pair (Symbol "begin",Pair (Number (Int 1),Pair (Number (Int 2), Pair (Number (Int 3), Nil)))),Nil)),Nil)),Pair (Pair (Symbol "set", Pair (Symbol "x", Pair (Symbol "y", Nil))), Nil)))]
-          
-          [Applic(LambdaSimple (["x"; "y"],Seq[Set (Var "x", Applic (Const (Sexpr (TaggedSexpr ("y", Nil))), []));Set (Var "y",Seq[Const (Sexpr (Number (Int 1))); Const (Sexpr (Number (Int 2)));Const (Sexpr (Number (Int 3)))]);Applic (Var "set", [Var "x"; Var "y"])]),[Const (Sexpr (Symbol "whatever")); Const (Sexpr (Symbol "whatever"))])]
-          
 
-
-          (
-                        (lambda (fact)
-                                        (set! fact    (lambda (n)
-                                        (if (zero? n)
-                                          1 
-                                          ( * n (fact(- n 1))))) )
-                                                                            (fact5))
-          'whatever)
-
-
-          (letrec ( (fact  (lambda(n) (if(zero? n) 1 ( * n (fact (- n 1))))
-                  ))     )
-          (fact 5))
- 
-
-
-          Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "fact", Nil), Pair(Pair(Symbol "set!", Pair(Symbol "fact", Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "if", Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Number (Fraction(1, 1)), Pair(Pair(Symbol "*", Pair(Symbol "n", Pair(Pair(Symbol "fact", Pair(Pair(Symbol "-", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil)), Nil))), Nil)))), Nil))), Nil))), Pair(Pair(Symbol "fact5", Nil), Nil)))), Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil))
-
-          Pair(Symbol "letrec", 
-          Pair(Pair(Pair(Symbol "fact", Pair(Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "if", Pair(Pair(Symbol "zero?", Pair(Symbol "n", Nil)), Pair(Number (Fraction(1, 1)), Pair(Pair(Symbol "*", Pair(Symbol "n", Pair(Pair(Symbol "fact", Pair(Pair(Symbol "-", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil)), Nil))), Nil)))), Nil))), Nil)), Nil),
-           Pair(Pair(Symbol "fact", Pair(Number (Fraction(5, 1)), Nil)), Nil)))
- *)
 
 (* ===================================================================================== *)
   (* Applic MUST BE THE LAST *)
