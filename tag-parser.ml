@@ -453,8 +453,8 @@ let tag_parse_expressions sexpr = List.map tag_pareser sexpr;;
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
 
-
+(* 
 
 Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "else",Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Nil)))),Nil)))
 
-Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),[Var "a"; LambdaSimple ([], Var "b");LambdaSimple ([],Seq[Const (Sexpr (Number (Fraction(1,1)))); Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
+Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),[Var "a"; LambdaSimple ([], Var "b");LambdaSimple ([],Seq[Const (Sexpr (Number (Fraction(1,1)))); Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])]) *)
