@@ -312,43 +312,36 @@ let rec tag_pareser sexpr = match sexpr with
           in  (let_options params)
 
 
+(* ===================================================================================== *)
 
-
-
-   
-
-
-  | Pair(Symbol "letrec", Pair(params, body)) ->
-    let rec f_whatevers params = match params with
-          | Nil -> Nil  
-          (* | Pair(Nil, Nil) -> Nil             *)
-          | Pair(Pair(var_sexp, val_sexp), Nil) ->  Pair (var_sexp, Pair (Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil))
-          | Pair(Pair(var_sexp, val_sexp), ribs) -> Pair (Pair (var_sexp, Pair(Pair (Symbol "quote", Pair (Symbol "whatever", Nil)), Nil)), (Pair((f_whatevers ribs),Nil)))
-                                                          
           
-          | _ -> raise X_no_match
-        in
-        let rec set_exps_init params = match params with
-          | Nil -> Nil
-          (* | Pair(Nil, Nil) -> Nil *)
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), Nil) ->  Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))),  Pair(Pair(Symbol "let", Pair(Nil, body)),Nil))
-          | Pair(Pair(var_sexp, Pair(val_sexp,Nil)), ribs) -> Pair(Pair(Symbol "set!",Pair(var_sexp, Pair(val_sexp, Nil))), (set_exps_init ribs))
-          
-          | _ -> raise X_no_match
+ 
+
+
+| Pair(Symbol "letrec", Pair(params, body)) ->
+      let rec f_whatevers params = match params with
+        |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), Nil) -> Pair(Pair(Symbol(s), Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), Nil)
+        |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), ribs) -> Pair(Pair(Symbol(s), Pair(Pair(Symbol "quote", Pair(Symbol "whatever", Nil)), Nil)), f_whatevers ribs )        
+        | _ -> raise X_no_match
+      in
+        let rec set_exps_init params body = match params with
+        |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), Nil) ->   Pair(Pair(Symbol "set!", Pair(Symbol(s) , Pair(val_sexp , Nil))),  Pair(Pair(Symbol "let", Pair(Nil, body )), Nil))                
+        |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), ribs) ->  Pair(Pair(Symbol "set!", Pair(Symbol(s) , Pair(val_sexp , Nil))), set_exps_init ribs body)                                                          
+        | _ -> raise X_no_match
 
         in
-        (* let final_empty_let = Pair(Symbol "let", Pair(Nil, body)) in  *)
         let f_whatever_applied = f_whatevers params in
-        let set_exps_init_applied = set_exps_init params in
+        let set_exps_init_applied = set_exps_init params body in
 
-(* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
+  tag_pareser  (Pair(Symbol "let", Pair(  f_whatever_applied, set_exps_init_applied  )))
 
-        (tag_pareser(Pair(Symbol "let", Pair(f_whatever_applied,set_exps_init_applied))))
 
-(* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
-(* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
-(* ======================== WORKS ONLY WITH 2 PARAMS ============================ *)
 
+
+
+
+
+(* ===================================================================================== *)
 
 
   | Pair(Symbol "quasiquote",Pair (quasi_exp, Nil)) -> 
