@@ -162,6 +162,9 @@ let rec tag_pareser sexpr = match sexpr with
         let bodies = (implicit_seq body) in
         if((List.length params_string_list) == 0) 
                 then LambdaSimple(params_string_list, bodies) 
+
+                (* define is a reserved ward that no var can have = therefore we put it in the hd of the list*)
+                (* to sign that we have LambdaOpt *)
                 else if (String.equal (List.hd params_string_list) "define") 
                   then LambdaOpt((List.tl (List.tl params_string_list)), (List.hd (List.tl params_string_list)), bodies )
                   else LambdaSimple(params_string_list, bodies)
@@ -208,7 +211,7 @@ let rec tag_pareser sexpr = match sexpr with
 
     (* ===================================================================================== *)
 
-  | Pair(Symbol "set!",Pair(var, tl)) ->
+  | Pair(Symbol "set!",Pair(var, Pair(tl , Nil))) ->
     let var_exp = tag_pareser var in
     let tl_exp = tag_pareser tl in
     let set_exp = match var_exp with
@@ -350,6 +353,30 @@ Pair(Symbol "begin", Pair(Symbol "b", Pair(Pair(Symbol "define", Pair(Symbol "x"
 
 
 
+(*   
+Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil), Pair (Number (Fraction (1, 1)), Nil))
+  
+  ([Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
+      Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
+  [Const (Sexpr (Symbol "whatever"))])]);;
+ 
+ let testLetRec2 = test_exp (tag_parse_expressions([Pair (Symbol "letrec",Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil),
+  Pair (Number (Fraction (1, 1)), Pair (Symbol "a", Nil))))])) ([Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
+      Applic(LambdaSimple ([],Seq [Const (Sexpr (Number (Fraction (1, 1)))); Var "a"]),[])]),
+  [Const (Sexpr (Symbol "whatever"))])]);;
+ 
+ let testLetRec3 = test_exp (tag_parse_expressions([Pair (Symbol "letrec",Pair(Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)),
+    Pair (Pair (Symbol "b", Pair (Number (Fraction (1, 1)), Nil)),Pair (Pair (Symbol "c", Pair (Number (Fraction (3, 1)), Nil)), Nil))),
+  Pair (Number (Fraction (1, 1)), Pair (Symbol "a", Nil))))])) ([Applic(LambdaSimple (["a"; "b"; "c"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));Set (Var "b", Const (Sexpr (Number (Fraction (1, 1)))));
+      Set (Var "c", Const (Sexpr (Number (Fraction (3, 1)))));
+      Applic
+       (LambdaSimple ([],
+         Seq [Const (Sexpr (Number (Fraction (1, 1)))); Var "a"]),
+       [])]),
+  [Const (Sexpr (Symbol "whatever")); Const (Sexpr (Symbol "whatever"));
+   Const (Sexpr (Symbol "whatever"))])]);;
+ *)
+
 
 
 
@@ -453,8 +480,39 @@ let tag_parse_expressions sexpr = List.map tag_pareser sexpr;;
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
 
+  
 (* 
+(* test 54 *)
 
 Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "else",Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Nil)))),Nil)))
 
-Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),[Var "a"; LambdaSimple ([], Var "b");LambdaSimple ([],Seq[Const (Sexpr (Number (Fraction(1,1)))); Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])]) *)
+
+
+
+(* correct output 54 *)
+Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),
+[Var "a"; LambdaSimple ([],          Var "b");LambdaSimple ([],
+Seq[Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
+
+
+
+Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (         Var "f", [Var "value"]), Applic (Var "rest", []))),
+[Var "a"; LambdaSimple ([], Applic (Var "b", []));LambdaSimple ([],
+Seq[Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
+
+
+(* test 53 *)
+Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))), Nil))
+
+
+
+(* correct output 53 *)
+Applic(LambdaSimple (["value"; "f"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Const Void)),[Var "a"; LambdaSimple ([], Var "b")])
+
+ *)
+
+
+
+
+
+   
