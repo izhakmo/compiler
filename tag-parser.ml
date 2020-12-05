@@ -122,22 +122,25 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 
-      | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , Nil) ->
+      | Pair(Pair( value, Pair(Symbol "=>", Pair(function_sexp ,Nil) )) , Nil) ->
                                             
                       (Pair(Symbol "let", Pair(
                         Pair(Pair(Symbol "value", Pair(value, Nil)),
                         Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(function_sexp, Nil))), Nil)),
                         Nil)),
-                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)),Nil))), Nil))))
+                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Nil))), Nil))))
+                             (* Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Nil))) *)
 
-
-      | Pair(Pair( value, Pair(Symbol "=>", function_sexp )) , recursive_more) ->
+      | Pair(Pair( value, Pair(Symbol "=>", Pair(function_sexp ,Nil) )) , recursive_more) ->
                                             
                       (Pair(Symbol "let", Pair(
                         Pair(Pair(Symbol "value", Pair(value, Nil)),
                         Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(function_sexp, Nil))), Nil)),
                         Pair(Pair(Symbol "rest", Pair(Pair(Symbol "lambda", Pair(Nil, Pair((cond_exp recursive_more), Nil))), Nil)), Nil))),
-                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Symbol "f", Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
+                        Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
+                             
+                        (* (if value ((f) value) ) *)
+                        (* Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))) *)
 
       | Pair(Pair(test_sexp, then_sexp), Pair(Pair(Symbol "else", else_sexp),Nil)) ->
                        (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair(Pair(Symbol "begin", else_sexp),Nil)  )))) 
@@ -480,25 +483,35 @@ let tag_parse_expressions sexpr = List.map tag_pareser sexpr;;
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
 
-  
-(* 
+(*   
+
+(cond (a => b)
+      (else 1 1 1)) *)
+
+
+ 
+
 (* test 54 *)
-
+(* 
 Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "else",Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Nil)))),Nil)))
-
-
 
 
 (* correct output 54 *)
 Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),
-[Var "a"; LambdaSimple ([],          Var "b");LambdaSimple ([],
-Seq[Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
+[Var "a"; LambdaSimple ([],            Var "b");LambdaSimple ([],
+Seq
+[Const (Sexpr (Number (Fraction (1, 1))));
+Const (Sexpr (Number (Fraction (1, 1))));
+Const (Sexpr (Number (Fraction (1, 1))))])])
 
 
 
-Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (         Var "f", [Var "value"]), Applic (Var "rest", []))),
+Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),
 [Var "a"; LambdaSimple ([], Applic (Var "b", []));LambdaSimple ([],
-Seq[Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))));Const (Sexpr (Number (Fraction(1,1))))])])
+Seq
+[Const (Sexpr (Number (Fraction (1, 1))));
+Const (Sexpr (Number (Fraction (1, 1))));
+Const (Sexpr (Number (Fraction (1, 1))))])])
 
 
 (* test 53 *)
@@ -509,9 +522,9 @@ Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b",
 (* correct output 53 *)
 Applic(LambdaSimple (["value"; "f"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Const Void)),[Var "a"; LambdaSimple ([], Var "b")])
 
+ 
+
  *)
-
-
 
 
 
