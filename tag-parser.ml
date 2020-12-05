@@ -71,9 +71,9 @@ let reserved_word_list =
    "unquote-splicing"];;  
 
 (* work on the tag parser starts here *)
-(* 
-let reserved_specialform_list =
-  ["and"; "begin"; "cond"; "let"; "let*"; "letrec"; "quasiquote"; "quote"; "pset!"; "unquote"; "unquote-splicing"];;  *)
+
+
+(*  *)
 
 let rec symbol_extract_fun lst sexpr = match sexpr with
   | Nil -> lst
@@ -98,7 +98,7 @@ let rec tag_pareser sexpr = match sexpr with
 
   | Symbol(s) -> if (not (List.mem s reserved_word_list)) then Var(s) else  raise X_no_match
 
-  (* ===================================================================================== *)  
+  (* ============================= IF ============================================= *)  
 
   | Pair(Symbol "if", Pair(test_sexp, Pair(then_sexp, Pair(else_sexp, Nil)))) ->
       let test_exp = (tag_pareser test_sexp) in
@@ -113,7 +113,7 @@ let rec tag_pareser sexpr = match sexpr with
 
 
 (* ====================== COND ======================================== *)
-
+(* (cond (a => (b 2)) (else 1)) *)
 
   | Pair(Symbol "cond", cases) -> 
     let rec cond_exp case = match case with
@@ -129,7 +129,7 @@ let rec tag_pareser sexpr = match sexpr with
                         Pair(Pair(Symbol "f", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(function_sexp, Nil))), Nil)),
                         Nil)),
                         Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Nil))), Nil))))
-                             (* Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Nil))) *)
+                          
 
       | Pair(Pair( value, Pair(Symbol "=>", Pair(function_sexp ,Nil) )) , recursive_more) ->
                                             
@@ -139,8 +139,7 @@ let rec tag_pareser sexpr = match sexpr with
                         Pair(Pair(Symbol "rest", Pair(Pair(Symbol "lambda", Pair(Nil, Pair((cond_exp recursive_more), Nil))), Nil)), Nil))),
                         Pair(Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))), Nil))))
                              
-                        (* (if value ((f) value) ) *)
-                        (* Pair(Symbol "if", Pair(Symbol "value", Pair(Pair(Pair(Symbol "f", Nil), Pair(Symbol "value", Nil)), Pair(Pair(Symbol "rest", Nil), Nil)))) *)
+                       
 
       | Pair(Pair(test_sexp, then_sexp), Pair(Pair(Symbol "else", else_sexp),Nil)) ->
                        (Pair(Symbol("if"),Pair(test_sexp,Pair(Pair(Symbol "begin", then_sexp),Pair(Pair(Symbol "begin", else_sexp),Nil)  )))) 
@@ -222,18 +221,42 @@ let rec tag_pareser sexpr = match sexpr with
       | _ -> raise X_no_match in
     set_exp
 
+
 (* ===================================================================================== *)
 
-(* (begin b (define x 10) (set b (+ x 15))) *)
-(* Seq[Var "b";
-Def (Var "x", Applic (Const (Sexpr (Number (Fraction (10, 1)))), []));
-Applic (Var "set",
-[Var "b";
-Applic (Var "+", [Var "x"; Const (Sexpr (Number (Fraction (15, 1))))])])]
+(* (pset! (x y) (y x)) 
+(define fun (lambda (bx by) (set! x bx)  (set! y by)))  *)
+
+| Pair(Symbol "pset!", pairs) ->
+    
+    let gen_var s num = String.concat "" [s; string_of_int num] in
+
+    let rec lambda_vars params num = match params with
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), Nil) -> Pair(Symbol(gen_var s num), Nil)
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), ribs) -> Pair(Symbol(gen_var s num), (lambda_vars ribs (num + 1)))
+    | _ -> raise X_no_match in
 
 
-Pair(Symbol "begin", Pair(Symbol "b", Pair(Pair(Symbol "define", Pair(Symbol "x", Pair(Number (Fraction(10, 1)), Nil))), Pair(Pair(Symbol "set", Pair(Symbol "b", Pair(Pair(Symbol "+", Pair(Symbol "x", Pair(Number (Fraction(15, 1)), Nil))), Nil))), Nil))))
- *)
+    let rec body_sets pairs num = match pairs with
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), Nil) ->   Pair(Pair(Symbol "set!", Pair(Symbol(s) , Pair(Symbol(gen_var s num) , Nil))), Nil)
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), ribs) ->  Pair(Pair(Symbol "set!", Pair(Symbol(s) , Pair(Symbol(gen_var s num) , Nil))), (body_sets ribs (num + 1)))                                                          
+    | _ -> raise X_no_match in
+
+  
+
+    let rec applic_vars lst pairs = match pairs with
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), Nil) -> lst@[(tag_pareser val_sexp)]
+    |Pair(Pair(Symbol(s), Pair(val_sexp, Nil)), ribs) -> (applic_vars (lst@[(tag_pareser val_sexp)]) ribs)
+    | _ -> raise X_no_match in
+
+
+    let gen_vars = lambda_vars pairs 0 in 
+    let gen_body = body_sets pairs 0 in 
+    let gen_applic_vals = applic_vars [] pairs in
+    
+    Applic(tag_pareser (Pair(Symbol "lambda",Pair(gen_vars ,gen_body))) , gen_applic_vals)  
+(* ===================================================================================== *)
+
 
 
     | Pair(Symbol "begin", s) -> 
@@ -299,18 +322,6 @@ Pair(Symbol "begin", Pair(Symbol "b", Pair(Pair(Symbol "define", Pair(Symbol "x"
 
 
 
-(* 
-
-        (Pair(Symbol("let"), Pair(
-          Pair(Symbol("value"), Pair(Symbol "a", Nil)), 
-          Pair(Pair(Symbol("f"), Pair(Pair(Symbol("lambda"), Pair(Nil,Symbol "b" )), Nil)), 
-          Pair(Pair(Symbol("rest"), Pair(Pair(Symbol("lambda"), Pair(Nil, Nil)), Nil)),
-
-
-          Pair(Pair(Symbol("if"), Pair(Symbol("value"), Pair(Pair(Pair(Symbol("f"), Nil), 
-          Pair(Symbol("value"), Nil)), Pair(Pair(Symbol ("rest"), Nil), Nil)))), Nil))))))
-
- *)
 
  (* ===================================================================================== *)
 
@@ -355,34 +366,6 @@ Pair(Symbol "begin", Pair(Symbol "b", Pair(Pair(Symbol "define", Pair(Symbol "x"
 
 
 
-
-(*   
-Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil), Pair (Number (Fraction (1, 1)), Nil))
-  
-  ([Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
-      Applic (LambdaSimple ([], Const (Sexpr (Number (Fraction (1, 1))))), [])]),
-  [Const (Sexpr (Symbol "whatever"))])]);;
- 
- let testLetRec2 = test_exp (tag_parse_expressions([Pair (Symbol "letrec",Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil),
-  Pair (Number (Fraction (1, 1)), Pair (Symbol "a", Nil))))])) ([Applic(LambdaSimple (["a"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));
-      Applic(LambdaSimple ([],Seq [Const (Sexpr (Number (Fraction (1, 1)))); Var "a"]),[])]),
-  [Const (Sexpr (Symbol "whatever"))])]);;
- 
- let testLetRec3 = test_exp (tag_parse_expressions([Pair (Symbol "letrec",Pair(Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)),
-    Pair (Pair (Symbol "b", Pair (Number (Fraction (1, 1)), Nil)),Pair (Pair (Symbol "c", Pair (Number (Fraction (3, 1)), Nil)), Nil))),
-  Pair (Number (Fraction (1, 1)), Pair (Symbol "a", Nil))))])) ([Applic(LambdaSimple (["a"; "b"; "c"],Seq[Set (Var "a", Const (Sexpr (Number (Fraction (1, 1)))));Set (Var "b", Const (Sexpr (Number (Fraction (1, 1)))));
-      Set (Var "c", Const (Sexpr (Number (Fraction (3, 1)))));
-      Applic
-       (LambdaSimple ([],
-         Seq [Const (Sexpr (Number (Fraction (1, 1)))); Var "a"]),
-       [])]),
-  [Const (Sexpr (Symbol "whatever")); Const (Sexpr (Symbol "whatever"));
-   Const (Sexpr (Symbol "whatever"))])]);;
- *)
-
-
-
-
 (* ===================================================================================== *)
 
 
@@ -406,28 +389,7 @@ Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil), Pair 
 
 
 (* ===================================================================================== *)
-  (* Applic MUST BE THE LAST *)
-  (* | Pair(Symbol(prim_op_OR_varRef), params) -> 
-      let proc_exp = tag_pareser (Symbol(prim_op_OR_varRef)) in
-      let rec params_exp lst sexpr = match sexpr with
-        | Nil -> lst
-        | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
-        | _ -> raise X_no_match
-      in
-      Applic(proc_exp, (params_exp [] params))
 
-      (* ===================================================================================== *)
-
-  | Pair(Pair(Symbol "lambda",lambdas_params_and_body), params) -> 
-    let proc_exp = tag_pareser (Pair(Symbol "lambda",lambdas_params_and_body)) in
-    let rec params_exp lst sexpr = match sexpr with
-      | Nil -> lst
-      | Pair(s ,rest) -> (params_exp (lst@[(tag_pareser s)]) rest)
-      | _ -> raise X_no_match
-    in
-    Applic(proc_exp, (params_exp [] params)) *)
-
-  (* ===================================================================================== *)
   
   | Pair(applic, params) -> 
       let proc_exp = tag_pareser applic in
@@ -438,20 +400,6 @@ Pair (Pair (Pair (Symbol "a", Pair (Number (Fraction (1, 1)), Nil)), Nil), Pair 
       in
       Applic(proc_exp, (params_exp [] params))
   
-
-  (* | Pair(some, Nil) -> tag_pareser some *)
-
-
-  (* | Pair(some, Nil) -> 
-    let proc_exp = tag_pareser some in
-      let params_exp = [] 
-      in
-      Applic(proc_exp, params_exp) *)
-  
-(* ===================================================================================== *)
-  (* | _ -> raise X_pareser *)
-  (* | some -> Const(Sexpr(some)) *)
-
 
   (* ===================================================================================== *)
   
@@ -483,48 +431,8 @@ let tag_parse_expressions sexpr = List.map tag_pareser sexpr;;
 end;; (* struct Tag_Parser *)
 open Tag_Parser;;
 
-(*   
+  
 
-(cond (a => b)
-      (else 1 1 1)) *)
-
-
- 
-
-(* test 54 *)
-(* 
-Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))),Pair(Pair (Symbol "else",Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Pair (Number (Fraction(1,1)), Nil)))),Nil)))
-
-
-(* correct output 54 *)
-Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),
-[Var "a"; LambdaSimple ([],            Var "b");LambdaSimple ([],
-Seq
-[Const (Sexpr (Number (Fraction (1, 1))));
-Const (Sexpr (Number (Fraction (1, 1))));
-Const (Sexpr (Number (Fraction (1, 1))))])])
-
-
-
-Applic(LambdaSimple (["value"; "f"; "rest"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Applic (Var "rest", []))),
-[Var "a"; LambdaSimple ([], Applic (Var "b", []));LambdaSimple ([],
-Seq
-[Const (Sexpr (Number (Fraction (1, 1))));
-Const (Sexpr (Number (Fraction (1, 1))));
-Const (Sexpr (Number (Fraction (1, 1))))])])
-
-
-(* test 53 *)
-Pair (Symbol "cond",Pair (Pair (Symbol "a", Pair (Symbol "=>", Pair (Symbol "b", Nil))), Nil))
-
-
-
-(* correct output 53 *)
-Applic(LambdaSimple (["value"; "f"],If (Var "value", Applic (Applic (Var "f", []), [Var "value"]),Const Void)),[Var "a"; LambdaSimple ([], Var "b")])
-
- 
-
- *)
 
 
 
