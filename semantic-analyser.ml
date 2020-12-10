@@ -52,7 +52,7 @@ let rec expr'_eq e1 e2 =
                        
 exception X_syntax_error;;
 exception X_entering_lambda;;
-exception X_check_Lexical;;
+exception X_search_var;;
 exception X_annotate_lexical_addresses;;
 
 
@@ -61,7 +61,9 @@ module type SEMANTICS = sig
   
   val entering_lambda : var list -> var list 
   val param_list_to_var_params : string list -> var list 
-  val check_Lexical : var list * string -> var
+  val search_var : var list * string -> var
+  val list_last_element : 'a list -> 'a
+  val list_without_last : 'a list -> 'a list
 
   
   val run_semantics : expr -> expr'
@@ -105,35 +107,18 @@ let param_list_to_var_params param_list =
 
   
 (* for every var we create the correct var type based on the env *)
-(* val check_Lexical : var list * string -> var *)
-
-(* let check_Lexical (lst, str_name) = 
-  
-  let rec find_var lst = match lst with
-  | [] -> VarFree(str_name)
-  | hd::tl -> check_vars lst
-  and check_vars lst = match (List.hd lst) with
-    | VarParam(name,minor) -> if (String.equal str_name name) then VarParam(str_name,minor) else (check_vars (List.tl lst))
-    | VarBound(name,major,minor) ->if (String.equal str_name name) then VarBound(str_name,major,minor) else (check_vars (List.tl lst))
-    | _ -> (find_var (List.tl lst))
-  in
-  find_var lst;; *)
-
-
-
-
-  let check_Lexical (lst, str_name) = 
+  let search_var (lst, str_name) = 
   
     let rec find_var lst = match (List.hd lst) with
       | VarParam(name,minor) -> if (String.equal str_name name) then VarParam(str_name,minor) else (check_empty_list (List.tl lst))
       | VarBound(name,major,minor) ->if (String.equal str_name name) then VarBound(str_name,major,minor) else (check_empty_list (List.tl lst))
-      | _ -> raise X_check_Lexical
+      | _ -> raise X_search_var
 
     and check_empty_list lst = match lst with
       | [] -> VarFree(str_name)
       | _ -> find_var lst
     in
-    check_empty_list lst;;
+    check_empty_list (List.rev lst);;
 
 
   
@@ -144,28 +129,89 @@ let param_list_to_var_params param_list =
 let annotate_lexical_addresses expr =
   let rec recursive_lexical lst expr = match expr with
     | Const(x) -> Const'(x)
-    | Var(x) -> Var'(check_Lexical (lst, x))
+    | Var(x) -> Var'(search_var (lst, x))
     | If(test_expr, then_expr, else_expr)  -> If'(recursive_lexical lst test_expr, recursive_lexical lst then_expr, recursive_lexical lst else_expr)
     | Seq(seq_lst) -> Seq'(List.map (recursive_lexical lst) seq_lst)
-    | Set(Var(x),bval) -> Set'((check_Lexical (lst, x)), (recursive_lexical lst bval))
-    | Def(Var(x),bval) -> Def'((check_Lexical (lst, x)), (recursive_lexical lst bval))
+    | Set(Var(x),bval) -> Set'((search_var (lst, x)), (recursive_lexical lst bval))
+    | Def(Var(x),bval) -> Def'((search_var (lst, x)), (recursive_lexical lst bval))
     | Or(or_lst) -> Or'(List.map (recursive_lexical lst) or_lst)
     | LambdaSimple(param_list, body_exp ) -> LambdaSimple'(param_list,
                                                           (recursive_lexical ((entering_lambda lst)@(param_list_to_var_params param_list)) body_exp))
-    | LambdaOpt(param_list, var_variadic ,body_exp ) -> LambdaOpt'(param_list,
-                                                                    var_variadic,
-                                                                    (recursive_lexical ((entering_lambda lst)@(param_list_to_var_params param_list)) body_exp))
+    | LambdaOpt(param_list, var_variadic ,body_exp ) -> 
+                                            let param_strings =  param_list@[var_variadic] in
+                                            let param_vars = param_list_to_var_params param_strings in
+                                            LambdaOpt'(param_list, var_variadic, (recursive_lexical ((entering_lambda lst)@param_vars) body_exp))
     | Applic(expr, expr_list) -> Applic'(recursive_lexical lst expr , List.map (recursive_lexical lst) expr_list )
     | _ -> raise X_annotate_lexical_addresses
     in
     recursive_lexical [] expr;;
 
+(* 
+    Annotate (expr , tp? ) :
+    If expr is Var or Const , return expr .
+    El seif expr is Applic ,
+    If tp? is true , return TC−Applic ( Annotate ( children , #f ) )
+    Else return Applic ( Annotate ( children , #f ) )
+    Else return expr with its children annotated according to the various rules
+ *)
 
 let annotate_tail_calls expr_tag = raise X_not_yet_implemented;;
 
+let list_last_element lst = 
+    let rev = (List.rev lst) in
+    let last = List.hd rev in
+    last;;
+
+let list_without_last lst = 
+    let rev = (List.rev lst) in
+    let without_last = (List.rev (List.tl rev)) in
+    without_last;;
+
+let annotate_tail_calls expr_tag = 
+  let rec annotate expr tp = match expr with
+  | Const'(x) -> Const'(x)
+  | Var'(x) -> Var'(x)
+  | If'(test_expr, then_expr, else_expr) -> If'((annotate test_expr false), (annotate then_expr tp), (annotate else_expr tp))
+  | Or'(or_lst) ->
+          let last = list_last_element or_lst in
+          let without_last = list_without_last or_lst in
+          let annotate_last = annotate last tp in
+          let annotate_map expr = (annotate expr false) in
+          let annotate_without_last = (List.map annotate_map without_last) in
+              Or'(annotate_without_last@[annotate_last])
+  | Def'(x,bval) -> Def'(x, (annotate bval false))
+  
+  | Seq'(seq_lst) -> 
+          let last = list_last_element seq_lst in
+          let without_last = list_without_last seq_lst in
+          let annotate_last = annotate last tp in
+          let annotate_map expr = (annotate expr false) in
+          let annotate_without_last = (List.map annotate_map without_last) in
+              Seq'(annotate_without_last@[annotate_last])
+  
+  | Set'(x,bval) -> Set'(x, (annotate bval false))
+  | LambdaSimple'(param_list, body_exp ) -> LambdaSimple'(param_list,(annotate body_exp true))
+  | LambdaOpt'(param_list, var_variadic ,body_exp ) -> LambdaOpt'(param_list, var_variadic,(annotate body_exp true))
+  
+  | Applic'(expr, expr_list) -> 
+          let annotate_foo expr = (annotate expr false) in
+          let annotate_proc = annotate_foo expr in
+          let annotate_map = (List.map annotate_foo expr_list) in
+                                if (tp == false)
+                                then Applic'(annotate_proc, annotate_map)
+                                else ApplicTP'(annotate_proc, annotate_map)
+  | _ -> raise X_annotate_lexical_addresses in
+  (annotate expr_tag false);;
+
+
+
+  
+
+
+
 let box_set expr_tag = raise X_not_yet_implemented;;
 
-let run_semantics expr = annotate_lexical_addresses expr;;
+let run_semantics expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
 (* 
 let run_semantics expr =
@@ -178,83 +224,3 @@ open Semantics;;
 
 
 
-
-(* 
- 
-
-
-( (LambdaSimple (["x"; "y"; "z"],
-  Seq
-   [LambdaSimple (["y"],
-     Seq
-      [Set (Var "x", Const (Sexpr (Number (Fraction(5,1)))));
-       Applic (Var "+", [Var "x"; Var "y"])]);
-    Applic (Var "+", [Var "x"; Var "y"; Var "z"])])) )
-
-    
-=========================
-
-( (LambdaSimple (["x"],
-  Seq
-   [LambdaSimple (["x"], Set (Var "x", Var "x"));
-    LambdaSimple (["x"], Set (Var "x", Var "x"))])) )
-    
-    
-    
-    
-    
-    (
-LambdaSimple' (["x"],
- Seq'
-  [LambdaSimple' (["x"],
-    Set'( (VarParam ("x", 0)), Var' (VarParam ("x", 0))));
-   LambdaSimple' (["x"],
-    Set'( (VarParam ("x", 0)), Var' (VarParam ("x", 0))))])) ;;
-
-===================================
-
-
-
-=====
-
-
-    (
-LambdaSimple' (["x"; "y"; "z"],
- Seq'
-  [
-   LambdaSimple' (["y"],
-      Seq'
-       [Set' (VarBound ("x", 0, 0), Const' (Sexpr (Number (Fraction(5,1)))));
-        ApplicTP' (Var' (VarFree "+"),
-         [Var' (VarBound ("x", 0, 0)); Var' (VarParam ("y", 0))])]);
-     ApplicTP' (Var' (VarFree "+"),
-      [Var' (VarParam ("x", 0)); Var' (VarParam ("y", 1));
-       Var' (VarParam ("z", 2))])]))
-
-
-
-
-
-
-
-( (LambdaOpt (["x"; "y"], "z",
- Applic (Var "+",
-  [Var "x"; Var "y";
-   LambdaSimple (["z"],
-    Applic (Var "+",
-     [Var "z"; LambdaSimple (["z"], Applic (Var "+", [Var "z"; Var "y"]))]))]))) )
-     
-     
-     
-     
-     
-     (
-LambdaOpt' (["x"; "y"], "z",
- ApplicTP' (Var' (VarFree "+"),
-  [Var' (VarParam ("x", 0)); Var' (VarParam ("y", 1));
-   LambdaSimple' (["z"],
-    ApplicTP' (Var' (VarFree "+"),
-     [Var' (VarParam ("z", 0));
-      LambdaSimple' (["z"],
-       ApplicTP' (Var' (VarFree "+"),
-        [Var' (VarParam ("z", 0)); Var' (VarBound ("y", 1, 1))]))]))])))  *)
