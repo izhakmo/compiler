@@ -161,15 +161,17 @@ let annotate_lexical_addresses expr =
     recursive_lexical [] expr;;
 
 
-    
 let annotate_tail_calls expr_tag = raise X_not_yet_implemented;;
 
 let box_set expr_tag = raise X_not_yet_implemented;;
 
+let run_semantics expr = annotate_lexical_addresses expr;;
+
+(* 
 let run_semantics expr =
   box_set
     (annotate_tail_calls
-       (annotate_lexical_addresses expr));;
+       (annotate_lexical_addresses expr));; *)
   
 end;; (* struct Semantics *)
 open Semantics;;
