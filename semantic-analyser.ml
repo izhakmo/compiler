@@ -111,7 +111,7 @@ let param_list_to_var_params param_list =
   
   let rec find_var lst = match lst with
   | [] -> VarFree(str_name)
-  | cd::tl -> check_vars lst
+  | hd::tl -> check_vars lst
   and check_vars lst = match (List.hd lst) with
     | VarParam(name,minor) -> if (String.equal str_name name) then VarParam(str_name,minor) else (check_vars (List.tl lst))
     | VarBound(name,major,minor) ->if (String.equal str_name name) then VarBound(str_name,major,minor) else (check_vars (List.tl lst))
@@ -125,11 +125,15 @@ let param_list_to_var_params param_list =
   let check_Lexical (lst, str_name) = 
   
     let rec find_var lst = match (List.hd lst) with
-      | VarParam(name,minor) -> if (String.equal str_name name) then VarParam(str_name,minor) else (find_var (List.tl lst))
-      | VarBound(name,major,minor) ->if (String.equal str_name name) then VarBound(str_name,major,minor) else (find_var (List.tl lst))
-      | _ -> VarFree(str_name)
+      | VarParam(name,minor) -> if (String.equal str_name name) then VarParam(str_name,minor) else (check_empty_list (List.tl lst))
+      | VarBound(name,major,minor) ->if (String.equal str_name name) then VarBound(str_name,major,minor) else (check_empty_list (List.tl lst))
+      | _ -> raise X_check_Lexical
+
+    and check_empty_list lst = match lst with
+      | [] -> VarFree(str_name)
+      | _ -> find_var lst
     in
-    find_var lst;;
+    check_empty_list lst;;
 
 
   
@@ -169,19 +173,12 @@ let run_semantics expr =
   
 end;; (* struct Semantics *)
 open Semantics;;
-(* 
-
-let test1 = test_exp' ( (LambdaSimple (["x"], (Var "x"))), Applic (LambdaSimple ([], Var "x"), [])))) )
-
-(
-LambdaSimple' (["x"],
-   Set' (VarParam ("x", 0),
-    Applic' (LambdaSimple' ([], Var' (VarBound ("x", 0, 0))), [])))) *)
 
 
 
 
 (* 
+ 
 
 
 ( (LambdaSimple (["x"; "y"; "z"],
@@ -191,6 +188,29 @@ LambdaSimple' (["x"],
       [Set (Var "x", Const (Sexpr (Number (Fraction(5,1)))));
        Applic (Var "+", [Var "x"; Var "y"])]);
     Applic (Var "+", [Var "x"; Var "y"; Var "z"])])) )
+
+    
+=========================
+
+( (LambdaSimple (["x"],
+  Seq
+   [LambdaSimple (["x"], Set (Var "x", Var "x"));
+    LambdaSimple (["x"], Set (Var "x", Var "x"))])) )
+    
+    
+    
+    
+    
+    (
+LambdaSimple' (["x"],
+ Seq'
+  [LambdaSimple' (["x"],
+    Set'( (VarParam ("x", 0)), Var' (VarParam ("x", 0))));
+   LambdaSimple' (["x"],
+    Set'( (VarParam ("x", 0)), Var' (VarParam ("x", 0))))])) ;;
+
+===================================
+
 
 
 =====
