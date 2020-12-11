@@ -21,39 +21,49 @@ type expr' =
   | Applic' of expr' * (expr' list)
   | ApplicTP' of expr' * (expr' list);;
 
-let rec expr'_eq e1 e2 =
-  match e1, e2 with
-  | Const' Void, Const' Void -> true
-  | Const'(Sexpr s1), Const'(Sexpr s2) -> sexpr_eq s1 s2
-  | Var'(VarFree v1), Var'(VarFree v2) -> String.equal v1 v2
-  | Var'(VarParam (v1,mn1)), Var'(VarParam (v2,mn2)) -> String.equal v1 v2 && mn1 = mn2
-  | Var'(VarBound (v1,mj1,mn1)), Var'(VarBound (v2,mj2,mn2)) -> String.equal v1 v2 && mj1 = mj2  && mn1 = mn2
-  | If'(t1, th1, el1), If'(t2, th2, el2) -> (expr'_eq t1 t2) &&
-                                            (expr'_eq th1 th2) &&
-                                              (expr'_eq el1 el2)
-  | (Seq'(l1), Seq'(l2)
-  | Or'(l1), Or'(l2)) -> List.for_all2 expr'_eq l1 l2
-  | (Set'(var1, val1), Set'(var2, val2)
-  | Def'(var1, val1), Def'(var2, val2)) -> (expr'_eq (Var'(var1)) (Var'(var2))) &&
-                                             (expr'_eq val1 val2)
-  | LambdaSimple'(vars1, body1), LambdaSimple'(vars2, body2) ->
-     (List.for_all2 String.equal vars1 vars2) &&
-       (expr'_eq body1 body2)
-  | LambdaOpt'(vars1, var1, body1), LambdaOpt'(vars2, var2, body2) ->
-     (String.equal var1 var2) &&
+  let rec expr'_eq e1 e2 =
+    match e1, e2 with
+    | Const' Void, Const' Void -> true
+    | Const'(Sexpr s1), Const'(Sexpr s2) -> sexpr_eq s1 s2
+    | Var'(VarFree v1), Var'(VarFree v2) -> String.equal v1 v2
+    | Var'(VarParam (v1,mn1)), Var'(VarParam (v2,mn2)) -> String.equal v1 v2 && mn1 = mn2
+    | Var'(VarBound (v1,mj1,mn1)), Var'(VarBound (v2,mj2,mn2)) -> String.equal v1 v2 && mj1 = mj2  && mn1 = mn2
+    | Box'(VarFree v1), Box'(VarFree v2) -> String.equal v1 v2
+    | Box'(VarParam (v1,mn1)), Box'(VarParam (v2,mn2)) -> String.equal v1 v2 && mn1 = mn2
+    | Box'(VarBound (v1,mj1,mn1)), Box'(VarBound (v2,mj2,mn2)) -> String.equal v1 v2 && mj1 = mj2  && mn1 = mn2
+    | BoxGet'(VarFree v1), BoxGet'(VarFree v2) -> String.equal v1 v2
+    | BoxGet'(VarParam (v1,mn1)), BoxGet'(VarParam (v2,mn2)) -> String.equal v1 v2 && mn1 = mn2
+    | BoxGet'(VarBound (v1,mj1,mn1)), BoxGet'(VarBound (v2,mj2,mn2)) -> String.equal v1 v2 && mj1 = mj2  && mn1 = mn2
+    | BoxSet'(VarFree v1,e1), BoxSet'(VarFree v2, e2) -> String.equal v1 v2 && (expr'_eq e1 e2)
+    | BoxSet'(VarParam (v1,mn1), e1), BoxSet'(VarParam (v2,mn2),e2) -> String.equal v1 v2 && mn1 = mn2 && (expr'_eq e1 e2)
+    | BoxSet'(VarBound (v1,mj1,mn1),e1), BoxSet'(VarBound (v2,mj2,mn2),e2) -> String.equal v1 v2 && mj1 = mj2  && mn1 = mn2 && (expr'_eq e1 e2)
+    | If'(t1, th1, el1), If'(t2, th2, el2) -> (expr'_eq t1 t2) &&
+                                              (expr'_eq th1 th2) &&
+                                                (expr'_eq el1 el2)
+    | (Seq'(l1), Seq'(l2)
+    | Or'(l1), Or'(l2)) -> List.for_all2 expr'_eq l1 l2
+    | (Set'(var1, val1), Set'(var2, val2)
+    | Def'(var1, val1), Def'(var2, val2)) -> (expr'_eq (Var'(var1)) (Var'(var2))) &&
+                                               (expr'_eq val1 val2)
+    | LambdaSimple'(vars1, body1), LambdaSimple'(vars2, body2) ->
        (List.for_all2 String.equal vars1 vars2) &&
          (expr'_eq body1 body2)
-  | Applic'(e1, args1), Applic'(e2, args2)
-  | ApplicTP'(e1, args1), ApplicTP'(e2, args2) ->
-	 (expr'_eq e1 e2) &&
-	   (List.for_all2 expr'_eq args1 args2)
-  | _ -> false;;
+    | LambdaOpt'(vars1, var1, body1), LambdaOpt'(vars2, var2, body2) ->
+       (String.equal var1 var2) &&
+         (List.for_all2 String.equal vars1 vars2) &&
+           (expr'_eq body1 body2)
+    | Applic'(e1, args1), Applic'(e2, args2)
+    | ApplicTP'(e1, args1), ApplicTP'(e2, args2) ->
+     (expr'_eq e1 e2) &&
+       (List.for_all2 expr'_eq args1 args2)
+    | _ -> false;;
 	
                        
 exception X_syntax_error;;
 exception X_entering_lambda;;
 exception X_search_var;;
 exception X_annotate_lexical_addresses;;
+exception X_box_set;;
 
 
 
@@ -204,12 +214,67 @@ let annotate_tail_calls expr_tag =
   (annotate expr_tag false);;
 
 
+(* return the lst with intersection TODO we compare the major of varbound*)
+let search_read_write_together list_read list_write = raise X_not_yet_implemented;;
 
-  
+(* return the lst with set for every var in lst *)
+(* Set'(Var'(VarParam(v, minor)), Box'(VarParam(v,minor))) *)
+let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
 
+(* box_set_box_get *)
+let change_var_with_box_set_get expr_tag lst_should_be_boxed = 
+  let rec boxit expr lst_should_be_boxed = match expr with
+    | Const'(s1)-> Const'(x)
+    | Var'(VarFree v1)-> 
+    | Var'(VarParam (v1,mn1))-> 
+    | Var'(VarBound (v1,mj1,mn1))-> 
+    | If'(t1, th1, el1)->
+    | Seq'(l1)-> 
+    | Or'(l1)->
+    | Def'(var1, val1)->
+    | Set'(x,bval) -> 
+    | LambdaSimple'(vars1, body1)->
+    | LambdaOpt'(vars1, var1, body1)->
+    | Applic'(e1, args1)->
+    | ApplicTP'(e1, args1)->
+    | _ -> raise X_box_set in
+    (annotate expr_tag false);;
 
 
 let box_set expr_tag = raise X_not_yet_implemented;;
+
+let box_set expr_tag = 
+let rec box expr list_read list_write = match expr with
+  | Const'(s1)-> Const'(x)
+  | Var'(VarFree v1)-> Var'(VarFree v1)
+  | Var'(VarParam (v1,mn1))-> Var'(VarParam (v1,mn1))
+  | Var'(VarBound (v1,mj1,mn1))->
+  | Set'(x,bval) -> 
+  | If'(test_exp, then_exp, else_exp)->  If'( box test_exp list_read list_write, box then_exp list_read list_write, box else_exp list_read list_write)
+  | Seq'(seq_lst)->
+  | Or'(or_lst)->
+  | Def'(var, val)-> box val list_read list_write
+  | LambdaSimple'(params_str_lst, expr_tag_body)-> 
+
+                                (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
+                                let bady_rec = box expr_tag_body [] []
+                                let bady_gen_lists_rw = box expr_tag_body [] []
+                                let should_be_boxed = search_read_write_together list_read list_write in
+                                let seq_box_lst = create_seq_boxset should_be_boxed in 
+                                let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed))
+
+
+
+  | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
+  | Applic'(proc, args)->
+  | ApplicTP'(proc, args)->
+  | _ -> raise X_box_set in
+  (annotate expr_tag false);;
+
+
+
+
+
 
 let run_semantics expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
@@ -224,3 +289,29 @@ open Semantics;;
 
 
 
+
+
+
+
+
+
+
+let tesst35_box = test_exp' ((LambdaSimple (["x"],
+Applic (Var "list",
+  [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))])))) 
+  
+  
+(
+LambdaSimple' (["x"],
+Seq'
+[Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+ApplicTP' (Var' (VarFree "list"),
+[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+LambdaSimple' (["y"],
+BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]));;
+
+
+LambdaSimple' (["x"], 
+ApplicTP' (Var' (VarFree "list"),
+[LambdaSimple' ([], Var' (VarBound ("x", 0, 0)));
+LambdaSimple' (["y"], Set' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))]))

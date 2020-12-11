@@ -1128,3 +1128,133 @@ LambdaSimple' ([],
     [Const' (Sexpr (Number (Fraction(2,1))))]);
    ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
     [Const' (Sexpr (Number (Fraction(3,1))))])])) ;;
+
+
+
+(* 
+let tesst35_box = test_exp' ((LambdaSimple (["x"],
+Applic (Var "list",
+  [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))])))) 
+  
+  
+  
+  (
+  LambdaSimple' (["x"],
+    Seq'
+    [Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+      ApplicTP' (Var' (VarFree "list"),
+      [LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+        LambdaSimple' (["y"],
+        BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]));;
+
+
+
+
+ LambdaSimple' (["x"], 
+ ApplicTP' (Var' (VarFree "list"),
+  [LambdaSimple' ([], Var' (VarBound ("x", 0, 0)));
+   LambdaSimple' (["y"], Set' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])) *)
+
+
+(* 
+let test43_box = test_exp' ((Def (Var "foo3",
+LambdaOpt (["x"], "y",
+ Seq
+  [LambdaSimple ([], Var "x"); LambdaSimple ([], Var "y");
+   LambdaSimple ([], Set (Var "x", Var "y"))]))))
+
+   (Def' (Var' (VarFree "foo3"),
+   LambdaOpt' (["x"], "y",
+    Seq'
+     [Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+      Seq'
+       [LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+        LambdaSimple' ([], Var' (VarBound ("y", 0, 1)));
+        LambdaSimple' ([],
+         BoxSet' (VarBound ("x", 0, 0), Var' (VarBound ("y", 0, 1))))]])));;
+
+
+
+let tesst44_box = test_exp' ((Def (Var "test",
+LambdaSimple (["x"],
+ Applic (Var "list",
+  [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))]))))) (
+    Def' (Var' (VarFree "test"),
+     LambdaSimple' (["x"],
+      Seq'
+       [Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+        ApplicTP' (Var' (VarFree "list"),
+         [LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+          LambdaSimple' (["y"],
+           BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])])));;
+
+
+let tesst46_box = test_exp' ((Def (Var "test",
+LambdaSimple (["x"; "y"],
+ If (Var "x", LambdaSimple ([], Set (Var "y", Var "x")),
+  LambdaSimple (["z"], Set (Var "x", Var "z"))))))) (
+    Def' (Var' (VarFree "test"),
+     LambdaSimple' (["x"; "y"],
+      Seq'
+       [Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+        If' (BoxGet' (VarParam ("x", 0)),
+         LambdaSimple' ([],
+          Set' (Var' (VarBound ("y", 0, 1)), BoxGet' (VarBound ("x", 0, 0)))),
+         LambdaSimple' (["z"],
+          BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("z", 0)))))])));;
+
+
+let tesst50_box = test_exp' ((Def (Var "test",
+LambdaOpt (["x"], "y",
+ Applic (Var "cons", [Var "x"; LambdaSimple ([], Set (Var "x", Var "y"))]))))) (
+  Def' (Var' (VarFree "test"),
+   LambdaOpt' (["x"], "y",
+    Seq'
+     [Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+      ApplicTP' (Var' (VarFree "cons"),
+       [BoxGet' (VarParam ("x", 0));
+        LambdaSimple' ([],
+         BoxSet' (VarBound ("x", 0, 0), Var' (VarBound ("y", 0, 1))))])])));;
+          *)
+
+(*
+let tesst35_box = test_exp' (()) ();;
+let tesst35_box = test_exp' (()) ();;
+let tesst35_box = test_exp' (()) ();;
+let tesst35_box = test_exp' (()) ();;
+let tesst35_box = test_exp' (()) ();;
+ *)
+
+(* 
+(print-template '(lambda(n)(list(lambda()(set! n (+ n 1))n)(lambda()(set! n 0)))))
+Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "list", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "set!", Pair(Symbol "n", Pair(Pair(Symbol "+", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil))), Pair(Symbol "n", Nil)))), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "set!", Pair(Symbol "n", Pair(Number (Fraction(0, 1)), Nil))), Nil))), Nil))), Nil)))
+
+should box n
+
+LambdaSimple (["n"],
+  Applic (Var "list",
+  [LambdaSimple ([],
+    Seq
+     [Set (Var "n",
+       Applic (Var "+", [Var "n"; Const (Sexpr (Number (Fraction (1, 1))))]));
+      Var "n"]);
+   LambdaSimple ([], Set (Var "n", Const (Sexpr (Number (Fraction (0, 1))))))]))
+
+
+
+(print-template '(lambda(n)(lambda()(list(lambda()(set! n (+ n 1))n)(lambda()(set! n 0))))))
+Pair(Symbol "lambda", Pair(Pair(Symbol "n", Nil), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "list", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "set!", Pair(Symbol "n", Pair(Pair(Symbol "+", Pair(Symbol "n", Pair(Number (Fraction(1, 1)), Nil))), Nil))), Pair(Symbol "n", Nil)))), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Pair(Symbol "set!", Pair(Symbol "n", Pair(Number (Fraction(0, 1)), Nil))), Nil))), Nil))), Nil))), Nil)))
+
+shoul not box n
+
+LambdaSimple (["n"],
+LambdaSimple ([],
+  Applic (Var "list",
+   [LambdaSimple ([],
+     Seq
+      [Set (Var "n",
+        Applic (Var "+", [Var "n"; Const (Sexpr (Number (Fraction (1, 1))))]));
+       Var "n"]);
+    LambdaSimple ([], Set (Var "n", Const (Sexpr (Number (Fraction (0, 1))))))])))
+    *)
+
