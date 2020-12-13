@@ -303,14 +303,30 @@ let tok_rparen = make_spaced ( char ')');;
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_string; nt_Symbol; nt_char ]);;
 
 
+(* let sexp_comment =  pack hash_semicolon (fun (a, b)-> [[a]@[b]] );; *)
+(* val sexp_comment : char list -> ((char * char) * sexpr) * char list = <fun>
+                                        char list list * char list *)
+
+  (* let sexp_comment =  pack (caten hash_semicolon _sexpr) (fun ((a, b), sexpr)-> [[a]@[b]] ) in *)
 
 
 let rec _sexpr lst= 
   
-  let core = (caten (disj (star nt_line_comments) nt_epsilon) 
+  (* let sexp_comment =  pack (caten (word "#;") _sexpr) (fun (a, sexpr)-> [a] ) in *)
+  let sexp_comment lst=  pack (word "#;") (fun (a)-> [[]]) lst in
+  
+  let core = (caten  (disj_list [(star nt_line_comments); nt_epsilon; sexp_comment])
+  (caten (disj_list [nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil; nt_nil_expr])
+  (disj (star nt_line_comments) nt_epsilon))) in 
+              (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst  
+
+
+
+  (* let core = (caten (disj (star nt_line_comments) nt_epsilon) 
   (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])
   (disj (star nt_line_comments) nt_epsilon))) in 
-              (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst
+              (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst *)
+
   (* let core = (caten (disj (star nt_line_comments) nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])  (star nt_line_comments) )) in 
               (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst *)
 
@@ -338,16 +354,18 @@ and quotes lst=
   (pack (caten (disj_list [(word "'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
-and sexp_comment lst= 
-(* let nt_nil_for_comments = (pack (disj_list [nt_whitespaces ;nt_epsilon]) (fun (_)-> Nil )) in *)
-                      (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
+(* and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst *)
 
-and nt_nil lst=  (pack (make_paired tok_lparen tok_rparen (disj_list [nt_line_comments; nt_whitespaces ;nt_epsilon;])) (fun (_)-> Nil )) lst
+and nt_nil lst=  (pack (make_paired tok_lparen tok_rparen (disj_list [nt_line_comments; nt_whitespaces ;nt_epsilon]) ) (fun (_)-> Nil )) lst
+and nt_nil_expr lst=  (pack (make_paired tok_lparen tok_rparen _sexpr ) (fun (_)-> Nil )) lst;;
+
+
 
 
 
 
 let read_sexprs string = let (a, b) = (star (make_spaced _sexpr)) (string_to_list string) in a;;
+
 
 
 
