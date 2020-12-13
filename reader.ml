@@ -104,6 +104,7 @@ module Reader: sig
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
   val nt_nil : char list -> sexpr * char list 
+  
 
   val quotes : char list -> sexpr * char list 
 
@@ -300,12 +301,15 @@ let tok_rparen = make_spaced ( char ')');;
 
 
 let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_string; nt_Symbol; nt_char ]);;
- 
+
+
 
 
 let rec _sexpr lst= 
   
-  let core = (caten (disj (star nt_line_comments) nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil]) (disj (star nt_line_comments) nt_epsilon))) in 
+  let core = (caten (disj (star nt_line_comments) nt_epsilon) 
+  (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])
+  (disj (star nt_line_comments) nt_epsilon))) in 
               (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst
   (* let core = (caten (disj (star nt_line_comments) nt_epsilon) (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])  (star nt_line_comments) )) in 
               (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst *)
@@ -334,10 +338,11 @@ and quotes lst=
   (pack (caten (disj_list [(word "'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
-and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
+and sexp_comment lst= 
+(* let nt_nil_for_comments = (pack (disj_list [nt_whitespaces ;nt_epsilon]) (fun (_)-> Nil )) in *)
+                      (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
 
-and nt_nil lst=  (pack (make_paired tok_lparen tok_rparen (disj_list [nt_line_comments; nt_whitespaces ;nt_epsilon])) (fun (_)-> Nil )) lst;;
-
+and nt_nil lst=  (pack (make_paired tok_lparen tok_rparen (disj_list [nt_line_comments; nt_whitespaces ;nt_epsilon;])) (fun (_)-> Nil )) lst
 
 
 
@@ -351,13 +356,12 @@ let read_sexprs string = let (a, b) = (star (make_spaced _sexpr)) (string_to_lis
 end;; (* struct Reader *)
 open Reader;; 
 
-
-
 (* 
+`(1 ;asd\n 2 3 #;#;#;123 2 3)
 
-(* 38 *)
-"Hello \t \r \n world!"
+[Pair (Symbol "quasiquote",Pair(Pair (Number (Fraction (1, 1)), Pair (Number (Fraction (2, 1)), Pair (Number (Fraction (3, 1)), Nil))),Nil))] *)
 
-[String "Hello \t \r \n world!"]
+(* read_sexprs ("(    #;#t    )");; *)
 
- *)
+
+ (* Failed cases 26 57 59 62 72 122 133 *)
