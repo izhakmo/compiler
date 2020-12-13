@@ -50,7 +50,7 @@ exception X_syntax_error;;
 module type TAG_PARSER = sig
   (* val symbol_extract_fun : string list -> sexpr -> string list *)
   (* val implicit_seq : expr list -> sexpr -> expr list *)
-  (* val tag_pareser : sexpr -> expr *)
+  val tag_pareser : sexpr -> expr
 
   val tag_parse_expressions : sexpr list -> expr list
   
