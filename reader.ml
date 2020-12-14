@@ -104,7 +104,7 @@ module Reader: sig
   val nt_list_improper : char list -> sexpr * char list 
   val _sexpr : char list -> sexpr * char list 
   val nt_nil : char list -> sexpr * char list 
-  val sexp_comment : char list -> sexpr * char list 
+  (* val sexp_comment : char list -> sexpr * char list  *)
 
   
 
@@ -311,10 +311,14 @@ let nt_sexper_not_pair = make_spaced (disj_list [nt_boolean ; nt_number ; nt_str
 
 let rec _sexpr lst= 
   
-  (* val core : char list -> (char list list * (sexpr * char list list)) * char list =                                                                                 <fun>  *)
-  let core = (caten (disj (star nt_line_comments) nt_epsilon) 
-  (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])
-  (disj (star nt_line_comments) nt_epsilon))) in 
+  let core_sexp_comment =  pack (caten (word "#;") _sexpr) (fun (a, sexpr)-> [] ) in
+  let spaced_core_sexp_comment = make_spaced core_sexp_comment in
+  let wrapper_new = (disj_list [spaced_core_sexp_comment; (star nt_line_comments); nt_epsilon]) in
+  (* let wrapper_old = (disj (star nt_line_comments) nt_epsilon) in *)
+  let core = (caten wrapper_new
+  (* (caten (disj_list [sexp_comment; nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil]) *)
+  (caten (disj_list [ nt_pair; nt_sexper_not_pair; nt_list_proper; nt_list_improper ; quotes ; nt_nil])
+  wrapper_new)) in 
               (pack core (fun (lp, (hdtl, rp)) -> hdtl)) lst
 
 and nt_pair lst=
@@ -341,7 +345,7 @@ and quotes lst=
   (pack (caten (disj_list [(word "'"); (word "`"); (word ",@"); (word ",")]) _sexpr) 
                             (fun (tok_quote, exper)-> Pair( Symbol((quote_match (list_to_string tok_quote))) , Pair(exper, Nil)))) lst
 
-and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst
+(* and sexp_comment lst= (pack (caten hash_semicolon (caten _sexpr _sexpr)) (fun ((hash , semi) , (_ , sexprB))-> sexprB)) lst *)
 
 and nt_nil lst=
                 let sexp_comment_nil =  pack (caten (word "#;") _sexpr) (fun (a, sexpr)-> [] ) in

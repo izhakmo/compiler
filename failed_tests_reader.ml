@@ -27,7 +27,7 @@
     |[a],[c] -> if(sexpr_eq a c) then true else false
   
 
-(* Failed cases 57 59 62 72 *)
+(* Failed cases 57*)
 
 
 
@@ -35,10 +35,11 @@
  let test26 = test_exp (read_sexprs("(    #;#t    )")) [Nil];; 
   let test33 = test_exp (read_sexprs("(a b . c)")) [Pair (Symbol "a", Pair (Symbol "b", Symbol "c"))];;
 
-  (* problems in sexpr_comments  *)
-  (* let test57 = test_exp (read_sexprs("(#; 1 (2 #; 3) #; (1 2) 3 #; #; (1 #; 3) 2 3)")) [Pair (Pair (Number (Fraction (2, 1), Nil),Pair (Number (Fraction (3, 1)), Pair (Number (Fraction (3, 1)), Nil))))];; *)  
-  (* let test59 = test_exp (read_sexprs("`(1 ;asd\n 2 3 #;#;#;123 2 3)  ")) [Pair (Symbol "quasiquote",Pair(Pair (Number (Fraction (1, 1)), Pair (Number (Fraction (2, 1)), Pair (Number (Fraction (3, 1)), Nil))),Nil))];;  *)
-  (* let test62 = test_exp (read_sexprs("(a . (b #;#t . ( (c . d) . e)))  ")) [Pair (Symbol "a",Pair (Symbol "b", Pair (Pair (Symbol "c", Symbol "d"), Symbol "e")))];;  *)
+  (* problems in end of sexpr_comments  *)
+  let test57 = test_exp (read_sexprs("(#; 1 (2 #; 3) #; (1 2) 3 #; #; (1 #; 3) 2 3)"))[Pair (Pair (Number (Fraction (2, 1)), Nil),Pair (Number (Fraction (3, 1)), Pair (Number (Fraction (3, 1)), Nil)))];;  
+                                                                                      (* [Pair (Pair (Number (Fraction (2, 1)), Nil), Pair (Number (Fraction (3, 1)), Pair (Number (Fraction (3, 1)), Nil)))] *)
+  let test59 = test_exp (read_sexprs("`(1 ;asd\n 2 3 #;#;#;123 2 3)  ")) [Pair (Symbol "quasiquote",Pair(Pair (Number (Fraction (1, 1)), Pair (Number (Fraction (2, 1)), Pair (Number (Fraction (3, 1)), Nil))),Nil))];; 
+  let test62 = test_exp (read_sexprs("(a . (b #;#t . ( (c . d) . e)))  ")) [Pair (Symbol "a",Pair (Symbol "b", Pair (Pair (Symbol "c", Symbol "d"), Symbol "e")))];; 
   let test64 = test_exp (read_sexprs("(a b 1 (c . d) e . ())  ")) [Pair (Symbol "a",Pair (Symbol "b",Pair (Number (Fraction (1, 1)),Pair (Pair (Symbol "c", Symbol "d"), Pair (Symbol "e", Nil)))))];;
   let test65 = test_exp (read_sexprs("(a b 1 (() . d) e . ())  ")) [Pair (Symbol "a",Pair (Symbol "b",Pair (Number (Fraction (1, 1)),Pair (Pair (Nil, Symbol "d"), Pair (Symbol "e", Nil)))))];;
   let test94 = test_exp (read_sexprs("'(#\\P 2020.2 2020 \"COVID19\" . #t)  ")) [Pair(Symbol("quote"),Pair(Pair(Char('P'), Pair(Number(Float(2020.2)), Pair(Number(Fraction (2020, 1)), Pair(String("COVID19"), Bool(true))))),Nil))];;
@@ -47,7 +48,7 @@
   let test99 = test_exp (read_sexprs("`(#\\D 1234.1234 1234 \"OK\" . #T)  ")) [Pair(Symbol("quasiquote"),Pair(Pair(Char('D'), Pair(Number(Float(1234.1234)), Pair(Number(Fraction (1234, 1)), Pair(String("OK"), Bool(true))))),Nil))];;
   let test109 = test_exp (read_sexprs("`(#\\c 555.555 555.555 \"test\" . #f)")) [Pair(Symbol("quasiquote"),Pair(Pair(Char('c'), Pair(Number(Float(555.555)), Pair(Number(Float(555.555)), Pair(String("test"), Bool(false))))),Nil))];;
   
-  (* problem in the dot list *)
+  
   let test122 = test_exp (read_sexprs("(#\\A 123456.234 555 \"test\" . ;blablabla\n #t)")) [Pair(Char('A'), Pair(Number(Float(123456.234)), Pair(Number(Fraction (555, 1)), Pair(String("test"), Bool(true)))))];;
   let test133 = test_exp (read_sexprs("( #\\c 37392.39382 37392 ;fsdfds#$#$#%$#\n . \"that\" )  ")) [Pair(Char('c'), Pair(Number(Float(37392.39382)), Pair(Number(Fraction(37392, 1)), String("that"))))];;
   let test134 = test_exp (read_sexprs("( #\\c 37392.39382 . 37393 )  ")) [Pair(Char('c'), Pair(Number(Float(37392.39382)), Number(Fraction(37393, 1))))];;
@@ -109,8 +110,8 @@
   let test75 = test_exp (read_sexprs("2.3")) [Number (Float 2.3)];;
   let test74 = test_exp (read_sexprs("1.3")) [Number (Float 1.3)];;
   let test72 = test_exp (read_sexprs("\"This is a very long
-  string that spills across
-  several lines.\"")) [String "This is a very long\nstring that spills across\nseveral lines."];;
+string that spills across
+several lines.\"")) [String "This is a very long\nstring that spills across\nseveral lines."];;
   let test68 = test_exp (read_sexprs("1.23e+1")) [Number (Float 12.3)];;
   let test67 = test_exp (read_sexprs("123456789e-9")) [Number (Float 0.123456789)];;
   let test66 = test_exp (read_sexprs("(().())")) [Pair (Nil, Nil)];;
