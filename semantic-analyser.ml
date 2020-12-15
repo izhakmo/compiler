@@ -222,18 +222,31 @@ let search_read_write_together list_read list_write = raise X_not_yet_implemente
 let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
 
 (* box_set_box_get *)
-let change_var_with_box_set_get expr_tag lst_should_be_boxed = 
+(* list.exist var in shouldbeboxed *)
+let box_make_the_change_with_box_set_get expr_tag lst_should_be_boxed = 
   let rec boxit expr lst_should_be_boxed = match expr with
     | Const'(s1)-> Const'(x)
-    | Var'(VarFree v1)-> 
+    | Var'(VarFree v1)-> Var'(VarFree v1)
     | Var'(VarParam (v1,mn1))-> 
+                                if(lst_should_be_boxed) 
+                                then BoxGet'(VarParam (v1,mn1))
+                                else Var'(VarParam (v1,mn1))
     | Var'(VarBound (v1,mj1,mn1))-> 
     | If'(t1, th1, el1)->
     | Seq'(l1)-> 
     | Or'(l1)->
     | Def'(var1, val1)->
     | Set'(x,bval) -> 
+                      if(lst_should_be_boxed) 
+                            then BoxSet'(x, boxit  bval lst_should_be_boxed)
+                            else Set'(x, boxit bval lst_should_be_boxed)
     | LambdaSimple'(vars1, body1)->
+
+    let bady_gen_lists_rw = box expr_tag_body [] []
+    let should_be_boxed = search_read_write_together list_read list_write in
+    let seq_box_lst = create_seq_boxset should_be_boxed in 
+    let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed))
+
     | LambdaOpt'(vars1, var1, body1)->
     | Applic'(e1, args1)->
     | ApplicTP'(e1, args1)->
@@ -241,27 +254,51 @@ let change_var_with_box_set_get expr_tag lst_should_be_boxed =
     (annotate expr_tag false);;
 
 
-let box_set expr_tag = raise X_not_yet_implemented;;
 
-let box_set expr_tag = 
-let rec box expr list_read list_write = match expr with
-  | Const'(s1)-> Const'(x)
-  | Var'(VarFree v1)-> Var'(VarFree v1)
-  | Var'(VarParam (v1,mn1))-> Var'(VarParam (v1,mn1))
-  | Var'(VarBound (v1,mj1,mn1))->
-  | Set'(x,bval) -> 
-  | If'(test_exp, then_exp, else_exp)->  If'( box test_exp list_read list_write, box then_exp list_read list_write, box else_exp list_read list_write)
+
+
+
+(* val extract_from_3d_array : 'a list list list -> int -> 'a list -> 'a list =      <fun>  *)
+(* [ [[];[]] ; [[];[]]     ] *)
+(* please put 3D arr and index 0 -read or 1 -write ans [] for first result *)
+let extract_from_3d_array arr index result = 
+  let is_read_write = if (index == 0) then true else false in
+  let rec extraction arr index result = match arr with
+  | []  -> result
+  | _ -> extraction (List.tl arr) index result@(if (is_read_write) then (List.hd (List.hd arr)) else (List.hd (List.tl (List.hd arr))))
+  in extraction arr index result;;
+
+let box_stuffing_lists expr_tag = 
+let rec box expr [list_var_read;list_var_write] = match expr with
+  | Const'(s1)-> [list_var_read;list_var_write]
+  | Var'(VarFree v1)-> [list_var_read;list_var_write]
+  | Var'(VarParam (v1,mn1))-> [list_var_read;list_var_write]
+  | Var'(VarBound (v1,mj1,mn1))-> [list_var_read@[Var'(VarBound (v1,mj1,mn1))]; list_var_write]
+  | Set'(x,bval) -> [list_var_read;list_var_write@[x]]
+  | If'(test_exp, then_exp, else_exp)->  If'( box test_exp [list_var_read;list_var_write], box then_exp [list_var_read;list_var_write], box else_exp [list_var_read;list_var_write])
   | Seq'(seq_lst)->
+                    let current_run exp = box exp [[];[]] in
+                    let map_seq_of_results = List.map current_run seq_lst in
+                    let more_var_read = extract_from_3d_array map_seq_of_results 0 [] in
+                    let more_var_write = extract_from_3d_array map_seq_of_results 1 [] in
+                    [list_var_read@more_var_read ;list_var_write@more_var_write]
+                    
   | Or'(or_lst)->
-  | Def'(var, val)-> box val list_read list_write
+                    let current_run exp = box exp [[];[]] in
+                    let map_seq_of_results = List.map current_run or_lst in
+                    let more_var_read = extract_from_3d_array map_or_of_results 0 [] in
+                    let more_var_write = extract_from_3d_array map_or_of_results 1 [] in
+                    [list_var_read@more_var_read ;list_var_write@more_var_write]
+
+  | Def'(var, val)-> box val [list_var_read;list_var_write]
+  
   | LambdaSimple'(params_str_lst, expr_tag_body)-> 
 
                                 (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
-                                let bady_rec = box expr_tag_body [] []
-                                let bady_gen_lists_rw = box expr_tag_body [] []
-                                let should_be_boxed = search_read_write_together list_read list_write in
-                                let seq_box_lst = create_seq_boxset should_be_boxed in 
-                                let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed))
+                                let bady_rec = box expr_tag_body [[];[]]
+                                (* [list_var_read;list_var_write] *)
+                                
+                                
 
 
 
@@ -270,11 +307,14 @@ let rec box expr list_read list_write = match expr with
   | ApplicTP'(proc, args)->
   | _ -> raise X_box_set in
   (annotate expr_tag false);;
+  
+  
+  
+(* box_numbering_system *)
 
 
 
-
-
+let box_set expr_tag = raise X_not_yet_implemented;;
 
 let run_semantics expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
