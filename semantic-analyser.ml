@@ -687,19 +687,34 @@ let pass var_shows =       List.map  pass_2 lst
 []
 *)
 
-[[{contents = []}; {contents = []}];
-  [{contents = []}; {contents = []}];
-  [{contents = []}]; 
-  []]
+
+
+
+
+
 
 let a var_shows = 
-  let head = (List.hd var_shows) in
-  let rest = (List.tl var_shows) in 
-  let memq_param lst show = List.memq show lst in
-  let func lst = List.map (memq_param lst) head in
-  let it_go = List.map func rest
-  in it_go
-  ;;
+  let rec triangle_run answer var_shows = match var_shows with
+  | [] -> answer
+  | _ -> 
+          let head = (List.hd var_shows) in
+          let rest = (List.tl var_shows) in 
+          let memq_param lst show = List.memq show lst in
+          let func lst = List.map (memq_param lst) head in
+          let bool_lst_lst_gen = List.map func rest in
+          triangle_run (answer@bool_lst_lst_gen) rest 
+  in
+  let func_bool bool_lst = List.fold_left (||) false bool_lst in
+  let bool_lst_of_ribs_Not = List.map  func_bool  (triangle_run [] var_shows)
+  in
+  let final_and = List.fold_left (&&) true bool_lst_of_ribs_Not in
+  let is_ribs_to_box = not final_and in
+  is_ribs_to_box;;
+
+
+
+
+
 
   val a : 'a list list -> bool list list 
 
@@ -713,12 +728,21 @@ let c = ref [];;
 a [[b; c]; [b; c];  [b];   []] ;;
 - : bool list list = [[true; true]; [true; false]; [false; false]]   
 
+
 [true; true; false]
 NOT
 [false; false; true]
+true
+
+(* let func_bool lst ans = match lst with
+  | [] -> ans
+  | _ -> func_bool (List.tl lst) (or ans (List.hd lst)) *)
 
 
-(*
+
+
+
+(*  
 
 
 (lambda (x) 
