@@ -85,6 +85,8 @@ module type SEMANTICS = sig
   val does_param_has_different_ribs : 'a list list -> bool
   val box_make_the_change_with_box_set_get : bool -> expr' -> string -> expr'
 
+  
+  val run_semantics_first : expr -> expr'
   val run_semantics : expr -> expr'
   val annotate_lexical_addresses : expr -> expr'
   val annotate_tail_calls : expr' -> expr'
@@ -233,6 +235,9 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
   if(boolean)
   then
     let rec boxit expr var_name depth = match expr with
+      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
+      | BoxGet'(x) -> BoxGet'(x)
+      | BoxSet'(v, epx) -> BoxSet'(v, epx)
       | Const'(s1)-> Const'(s1)
       | Var'(VarFree v1)-> Var'(VarFree v1)
       | Var'(VarParam (v1,mn1))-> 
@@ -263,7 +268,8 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
                                                               if((String.equal v1 var_name) && (depth == mj1))
                                                               then BoxSet'(x, boxit bval var_name depth)
                                                               else Set'(x, boxit bval var_name depth)
-                              | _ -> raise X_box_make_the_change_with_box_set_get
+                              | VarFree (v1) ->               Set'(x, boxit bval var_name depth)
+                              (* | _ -> raise X_box_make_the_change_with_box_set_get *)
                               in
                               var_type x
 
@@ -276,12 +282,13 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
       | Applic'(e1, args1)->
                               let func expr = boxit expr var_name depth in
                               let applic_body =  List.map func args1 in
-                              Applic'(boxit e1 var_name depth, applic_body)
+                              Applic'((boxit e1 var_name depth), applic_body)
       | ApplicTP'(e1, args1)->
                               let func expr = boxit expr var_name depth in
                               let applic_body =  List.map func args1 in
-                              Applic'(boxit e1 var_name depth, applic_body)
-      | _ -> raise X_box_make_the_change_with_box_set_get
+                              ApplicTP'((boxit e1 var_name depth), applic_body)
+      | x -> x
+      (* | _ -> raise X_box_make_the_change_with_box_set_get *)
       in
       boxit expr var_name (-1)
     else
@@ -307,6 +314,9 @@ let extract_from_3d_array arr index result =
   (* we check by the depth and the var_name so we take only the interesting vars that we need *)
 let box_stuffing_lists expr var_name =
 let rec stuffing_lists expr var_name depth lists  = match expr, lists with
+  | Set'(VarParam(a, b), Box'(VarParam( x, y))) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | BoxGet'(x) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | BoxSet'(v, epx) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Const'(s1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarFree v1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarParam (v1,mn1)), [list_var_read;list_var_write]->
@@ -330,7 +340,9 @@ let rec stuffing_lists expr var_name depth lists  = match expr, lists with
                                                     if((String.equal v1 var_name) && (depth == mj1))
                                                     then stuffing_lists bval var_name depth [list_var_read; list_var_write @[Var'(VarBound (v1,mj1,mn1))]]
                                                     else stuffing_lists bval var_name depth [list_var_read;list_var_write]
-                    | _ -> raise X_stuffing_lists_stuffing_lists
+
+                    | VarFree (v1) ->               stuffing_lists bval var_name depth [list_var_read;list_var_write]
+                    (* | _ -> raise X_stuffing_lists_stuffing_lists *)
                     in
                     var_type x
 
@@ -411,6 +423,9 @@ let extract_ribs_3d_array arr result =
 
 let box_rib_stuffing expr var_name =
     let rec rib_stuffing expr var_name depth curr_list_ref res_lists  = match expr with
+      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> res_lists
+      | BoxGet'(x) -> res_lists
+      | BoxSet'(v, epx) -> res_lists
       | Const'(s1)-> res_lists
       | Var'(VarFree v1)-> res_lists
       | Var'(VarParam (v1,mn1))->
@@ -428,12 +443,13 @@ let box_rib_stuffing expr var_name =
                     | VarParam (v1,mn1) ->
                                                     if ((String.equal v1 var_name) && (depth == (-1)))
                                                     then rib_stuffing bval var_name depth curr_list_ref res_lists@[curr_list_ref]
-                                                    else res_lists
+                                                    else rib_stuffing bval var_name depth curr_list_ref res_lists
                     | VarBound (v1,mj1,mn1)-> 
                                                     if((String.equal v1 var_name) && (depth == mj1))
                                                     then rib_stuffing bval var_name depth curr_list_ref res_lists@[curr_list_ref]
-                                                    else res_lists
-                    | _ -> raise X_stuffing_lists_stuffing_lists
+                                                    else rib_stuffing bval var_name depth curr_list_ref res_lists
+                    | VarFree (v1) ->               rib_stuffing bval var_name depth curr_list_ref res_lists
+                    (* | _ -> raise X_box_rib_stuffing *)
                     in
                     var_type x
 
@@ -523,6 +539,9 @@ let does_param_has_different_ribs var_shows =
 
 let box_set expr = 
   let rec box expr = match expr with
+  | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
+  | BoxGet'(x) -> BoxGet'(x)
+  | BoxSet'(v, epx) -> BoxSet'(v, epx)
   | Const'(s1)->
                       Const'(s1)
   | Var'(VarFree v1)->
@@ -612,10 +631,59 @@ let box_set expr =
                       | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
                       | _ -> Seq'(sets_lst@[body])
                       in
-                      LambdaSimple'(params_str_lst, construct_sets_with_new_body)
+                      LambdaSimple'(params_str_lst, box construct_sets_with_new_body)
                                     
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
-                      LambdaOpt'(params_str_lst, vs_str, expr_tag_body)
+  let param_str_lst_and_vs =params_str_lst@[vs_str] in 
+
+  let rules var_name = 
+                      (* ALL R_W *)
+                      let lst_RW = (box_stuffing_lists expr_tag_body var_name) in
+                       (* Single R_W *)
+                      let rule_one_bool = if ((List.length (List.hd lst_RW) > 0 ) && (List.length (List.hd (List.tl lst_RW)) > 0) ) then true else false in
+
+                      (* ALL Ribs *)
+                      let lst_ribs = (box_rib_stuffing expr_tag_body var_name) in
+                      (* Single Ribs *)
+                      let func_rest piece = (List.tl piece) in
+                      let params_ribs_lists_clean_first_junk_func = List.map func_rest lst_ribs in
+
+                      let rule_two_bool = does_param_has_different_ribs params_ribs_lists_clean_first_junk_func in
+                      
+                      (* R_W  && Ribs *)
+                      let should_box_param = rule_one_bool && rule_two_bool in
+                      should_box_param 
+
+                      in
+                      (* All params_str *)
+                      let all_params_boolean_box_array = List.map rules param_str_lst_and_vs
+                      in
+                      let rec recursive_sets boolean_array params_array index sets_array = match boolean_array with
+                      | [] -> sets_array
+                      | _ -> if(List.hd boolean_array) 
+                             then (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) (sets_array@[Set'(VarParam(List.hd params_array, index), Box'(VarParam(List.hd params_array,index)))] )) 
+                             else (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) sets_array) 
+                      in
+                      let sets_lst = recursive_sets all_params_boolean_box_array param_str_lst_and_vs 0 []
+                      in
+                      
+
+                      let rec recursive_change_to_box boolean_array params_array body = match boolean_array with
+                      | [] -> body
+                      | _ -> let new_body = (box_make_the_change_with_box_set_get (List.hd boolean_array) body (List.hd params_array) ) in
+                              recursive_change_to_box (List.tl boolean_array) (List.tl params_array) new_body
+                      in
+                      let body = recursive_change_to_box all_params_boolean_box_array param_str_lst_and_vs expr_tag_body
+
+                      in
+
+
+
+                      let construct_sets_with_new_body = match body with 
+                      | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
+                      | _ -> Seq'(sets_lst@[body])
+                      in
+                      LambdaOpt'(params_str_lst, vs_str,box construct_sets_with_new_body)
 
   | Applic'(e1, args1)->
                         let map_box = List.map box args1 in
@@ -623,6 +691,8 @@ let box_set expr =
   | ApplicTP'(e1, args1)->
                         let map_box = List.map box args1 in
                         ApplicTP'((box e1), map_box)
+
+
   
   | _ -> raise X_box_rib_stuffing 
 
@@ -634,13 +704,12 @@ let box_set expr =
 
 
 
-(* let run_semantics expr = (annotate_tail_calls (annotate_lexical_addresses expr));; *)
+let run_semantics_first expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
 
 let run_semantics expr =
   box_set
-    (annotate_tail_calls
-       (annotate_lexical_addresses expr));;
+    (annotate_tail_calls (annotate_lexical_addresses expr));;
   
 end;; (* struct Semantics *)
 open Semantics;;
@@ -649,195 +718,99 @@ open Semantics;;
 
 
 (* 
+(test 
 
-
-
-
-
-let tesst35_box = test_exp' ((LambdaSimple (["x"],
-Applic (Var "list",
-  [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))])))) 
+(LambdaSimple (["x"; "y"],
+Seq
+[Applic (Var "x", [Var "y"]);
+LambdaSimple ([],
+LambdaSimple ([],
+LambdaSimple ([],
+Set (Var "x",
+Applic (LambdaSimple (["z"], Set (Var "y", Var "x")), [Var "y"])))))])
+)
   
-  
-(
-LambdaSimple' (["x"],
-Seq'
-[Set' (Var' (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-ApplicTP' (Var' (VarFree "list"),
-[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
-LambdaSimple' (["y"],
-BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]));;
-
-
-LambdaSimple' (["x"], 
-ApplicTP' (Var' (VarFree "list"),
-[LambdaSimple' ([], Var' (VarBound ("x", 0, 0)));
-LambdaSimple' (["y"], Set' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))]))
-
-
-
-
-(lambda (x) (lambda () x (set! x 5)))
-SAME
-
-(lambda (x) 
-  (lambda () x 
-                (lambda()(set! x 5))))
-SAME
-
-
-(lambda (x) 
-  x
-  (lambda () x 
-                (lambda()set! x 5)))
-Different
-
-
-(lambda (x) 
-  (lambda () x 
-                (lambda()set! x 5))
-  (lambda () x 
-                (lambda()set! x 5)))
-
-Different
-
-
-(lambda (x) 
-  (if x 
-        then (lambda()set! x 5))
-        else x))
-Different
-
-
-(lambda (x) 
-  (lambda () x 
-                (lambda() x (set! x 5))))
-SAME
-
-
-
-(lambda (x) 
-  x
-  (lambda () x 
-                (lambda() x (set! x 5))))
-Different
-
-
-chez = Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Symbol "x", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Pair(Pair(Symbol "set!", Pair(Symbol "x", Pair(Number (Fraction(5, 1)), Nil))), Nil)))), Nil)))), Nil))))
-tag_parser = LambdaSimple (["x"],Seq[Var "x"; LambdaSimple ([],Seq[Var "x";LambdaSimple ([],Seq [Var "x"; Set (Var "x", Const (Sexpr (Number (Fraction (5, 1)))))])])])
-run_semantics = LambdaSimple' (["x"],Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])])
-
-let a = box_rib_stuffing (Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])]) "x";;
-- : string list ref list list =
-[[{contents = ["to_remove"]}; {contents = []}; {contents = []}];
- [{contents = ["to_remove"]}; {contents = []}; {contents = []}];
- [{contents = ["to_remove"]}; {contents = []}]; 
- [{contents = ["to_remove"]}]]
-
-
-
- [[{contents = []}; {contents = []}];
-  [{contents = []}; {contents = []}];
-  [{contents = []}]; 
-  []]
-
-
-  val memq : 'a -> 'a list -> bool
-  Same as List.mem, but uses physical equality instead of structural equality to compare list elements.
-
-
-
-let pass_2 lst = List.map  func var_shows lst
-[{contents = []}; {contents = []}]
-
-
-let pass var_shows =       List.map  pass_2 lst
-[{contents = []}; {contents = []}];
-
-[{contents = []}; {contents = []}];
-
-[{contents = []}]; 
-
-[]
 *)
-
-
-
-
-
-
-
-
 (* 
-
-  val a : 'a list list -> bool list list 
-
-  [[{contents = []}; {contents = []}];
-  [{contents = []}; {contents = []}];
-  [{contents = []}]; 
-  []] 
-let b = ref [];;
-let c = ref [];;
-
-a [[b; c]; [b; c];  [b];   []] ;;
-- : bool list list = [[true; true]; [true; false]; [false; false]]   
-
-
-[true; true; false]
-NOT
-[false; false; true]
-true
-
-*)
+LambdaSimple' (["x"; "y"],Seq'
+[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+Set' ( (VarParam ("y", 1)), Box' (VarParam ("y", 1)));
+Applic' (BoxGet' (VarParam ("x", 0)), [BoxGet' (VarParam ("y", 1))]);
+LambdaSimple' ([],
+LambdaSimple' ([],
+LambdaSimple' ([],
+BoxSet' (VarBound ("x", 2, 0),
+Applic'
+(LambdaSimple' (["z"],
+BoxSet' (VarBound ("y", 3, 1), BoxGet' (VarBound ("x", 3, 0)))),
+[BoxGet' (VarBound ("y", 2, 1))])))))])
+) 
 
 
 
 
 
+
+LambdaSimple' (["x"; "y"],Seq'
+[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
+Set' (VarParam ("y", 1), Box' (VarParam ("y", 1)));
+Applic' (BoxGet' (VarParam ("x", 0)), [BoxGet' (VarParam ("y", 1))]);
+LambdaSimple' ([],
+LambdaSimple' ([],
+LambdaSimple' ([],
+BoxSet' (VarBound ("x", 2, 0),
+Applic'
+(LambdaSimple' (["z"],
+Set' (VarBound ("y", 3, 1), BoxGet' (VarBound ("x", 3, 0)))),
+[Var' (VarBound ("y", 2, 1))])))))]) *)
+
+
+
+(* *)
 (*  
+(LambdaSimple (["x"],
+  Seq
+   [Var "x";
+    LambdaSimple (["x"],
+     Seq
+      [Set (Var "x", Const (Sexpr (Number (Fraction(1,1)))));
+       LambdaSimple ([], Var "x")]);
+    LambdaSimple ([], Set (Var "x", Var "x"))]))
+  
+===================================
 
 
-(lambda (x) 
-  (set! x 5)
-  (lambda () x ))
-Different
+LambdaSimple' (["x"],Seq'
+[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
 
 
-(lambda (x) 
-  (set! x (+ x 1)))
-Same RIBS
+BoxGet' (VarParam ("x", 0));
 
-  (lambda (x) 
-  (set! x (lambda()(+ x 1))))
-  )
-  Different RIBS 
+LambdaSimple' (["x"],
+
+Seq'
+[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
+
+LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
+
+LambdaSimple' ([],
+BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))])
+
+================================================
+
+LambdaSimple' (["x"],Seq'
+[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
 
 
-(lambda (x) (set! x 5) (lambda () x ))
-Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Pair(Symbol "set!", Pair(Symbol "x", Pair(Number (Fraction(5, 1)), Nil))), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Nil))), Nil))))
-LambdaSimple (["x"], Seq [Set (Var "x", Const (Sexpr (Number (Fraction (5, 1))))); LambdaSimple ([], Var "x")])
-LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])
+BoxGet' (VarParam ("x", 0));
 
-box_stuffing_lists 
-(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
-- : expr' list list = [[]; []]
+LambdaSimple' (["x"],
 
-LambdaSimple' (["x"],                                                            Seq'                                                                           
-  [Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
-   BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1)))));
-   LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))])
- 
-(* with -2 *)
-box_rib_stuffing 
-(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
-- : string list ref list list =
-[[{contents = []}; {contents = ["x"]}; {contents = []}];
- [{contents = []}; {contents = ["x"]}]] 
+Seq'
+[Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (1, 1)))));
 
- (* with -1 and you send the body of the lambda *)
- box_rib_stuffing 
-(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
+LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]);
 
-box_rib_stuffing 
-(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
-- : string list ref list list =                                                                                          [[{contents = ["TEMP_remove"]}; {contents = []}];                                                                         [{contents = ["TEMP_remove"]}]]   *)
+LambdaSimple' ([],
+BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]) *) 
