@@ -65,6 +65,7 @@ exception X_search_var;;
 exception X_annotate_lexical_addresses;;
 exception X_box_make_the_change_with_box_set_get;;
 exception X_box_stuffing_lists;;
+exception X_stuffing_lists_stuffing_lists;;
 exception X_;;
 
 
@@ -75,8 +76,9 @@ module type SEMANTICS = sig
   val search_var : var list * string -> var
   val list_last_element : 'a list -> 'a
   val list_without_last : 'a list -> 'a list
+  val extract_from_3d_array : 'a list list list -> int -> 'a list -> 'a list 
+  val box_stuffing_lists : expr' -> string -> expr' list list
 
-  
   val run_semantics : expr -> expr'
   val annotate_lexical_addresses : expr -> expr'
   val annotate_tail_calls : expr' -> expr'
@@ -249,15 +251,15 @@ let box_make_the_change_with_box_set_get expr var_name =
     | Def'(var1, val1)->
                             Def'(var1, boxit val1 var_name depth)
     | Set'(x,bval) ->       let var_type x = match x with
-                            | Var'(VarParam (v1,mn1)) ->
+                            | VarParam (v1,mn1) ->
                                                             if ((String.equal v1 var_name) && (depth == (-1)))
                                                             then BoxSet'(x, boxit bval var_name depth)
                                                             else Set'(x, boxit bval var_name depth)
-                            | Var'(VarBound (v1,mj1,mn1))-> 
+                            | VarBound (v1,mj1,mn1)-> 
                                                             if((String.equal v1 var_name) && (depth == mj1))
                                                             then BoxSet'(x, boxit bval var_name depth)
                                                             else Set'(x, boxit bval var_name depth)
-                            | _ -> X_box_make_the_change_with_box_set_get
+                            | _ -> raise X_box_make_the_change_with_box_set_get
                             in
                             var_type x
 
@@ -277,7 +279,7 @@ let box_make_the_change_with_box_set_get expr var_name =
     | ApplicTP'(e1, args1)->
                             let func expr = boxit expr var_name depth in
                             let applic_body =  List.map func args1 in
-                            Applic'(boxit e1 var_name, applic_body)
+                            Applic'(boxit e1 var_name depth, applic_body)
     | _ -> raise X_box_make_the_change_with_box_set_get
     in
     boxit expr var_name (-1);;
@@ -318,22 +320,22 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
   | Set'(x,bval) ->
 
                     let var_type x = match x with
-                    | Var'(VarParam (v1,mn1)) ->
+                    | VarParam (v1,mn1) ->
                                                     if ((String.equal v1 var_name) && (depth == (-1)))
                                                     then stuffing_lists bval var_name depth [list_var_read ;list_var_write @[Var'(VarParam (v1,mn1))]]
                                                     else stuffing_lists bval var_name depth [list_var_read;list_var_write]
-                    | Var'(VarBound (v1,mj1,mn1))-> 
+                    | VarBound (v1,mj1,mn1)-> 
                                                     if((String.equal v1 var_name) && (depth == mj1))
                                                     then stuffing_lists bval var_name depth [list_var_read; list_var_write @[Var'(VarBound (v1,mj1,mn1))]]
                                                     else stuffing_lists bval var_name depth [list_var_read;list_var_write]
-                    | _ -> X_stuffing_lists_stuffing_lists
+                    | _ -> raise X_stuffing_lists_stuffing_lists
                     in
                     var_type x
 
   | If'(test_exp, then_exp, else_exp)-> 
                                             let if_lst = [test_exp; then_exp; else_exp] in
                                             map_stuffing_lists if_lst var_name depth [list_var_read;list_var_write]
-                                            
+
                                             (* let test_exp = stuffing_lists test_exp var_name depth [[];[]] in
                                              let then_exp = stuffing_lists then_exp var_name depth [[];[]] in
                                              let else_exp = stuffing_lists else_exp var_name depth [[];[]] in
@@ -357,7 +359,7 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                     let more_var_write = extract_from_3d_array map_or_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write] *)
 
-  | Def'(var, val)-> stuffing_lists val var_name depth [list_var_read;list_var_write]
+  | Def'(var1, val1)-> stuffing_lists val1 var_name depth [list_var_read;list_var_write]
   
   | LambdaSimple'(params_str_lst, expr_tag_body)->
                                 (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
@@ -367,12 +369,12 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
 
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
                                 stuffing_lists expr_tag_body var_name (depth+1) [list_var_read;list_var_write]
-  | Applic'(proc, args)-> 
-                    let lst = [proc]@args
+  | Applic'(e1, args1)-> 
+                    let lst = [e1]@args1 in
                     map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
 
-  | ApplicTP'(proc, args)->
-                    let lst = [proc]@args
+  | ApplicTP'(e1, args1)->
+                    let lst = [e1]@args1 in
                     map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
 
   | _ -> raise X_box_stuffing_lists 
@@ -380,14 +382,31 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
   and map_stuffing_lists lst var_name depth [list_var_read;list_var_write]=
                     let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_of_results = List.map current_run lst in
-                    let more_var_read = extract_from_3d_array map_applic_of_results 0 [] in
-                    let more_var_write = extract_from_3d_array map_applic_of_results 1 [] in
+                    let more_var_read = extract_from_3d_array map_of_results 0 [] in
+                    let more_var_write = extract_from_3d_array map_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write]
   in
 
 
   stuffing_lists expr var_name (-1) [[];[]] ;;
   
+(* 
+  Characters 84-4992:
+  Warning 8: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched:
+  (_::_::_::_|_::[]|[])
+  Characters 62-4992:
+  Warning 8: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched:
+  (_::_::_|[])
+  Characters 5041-5482:
+  Warning 8: this pattern-matching is not exhaustive.
+  Here is an example of a case that is not matched:
+  (_::_::_::_|_::[]|[])
+  val box_stuffing_lists : expr' -> string -> expr' list list
+   *)
+
+
 
 
 (* box_numbering_system *)
@@ -411,7 +430,7 @@ open Semantics;;
 
 
 
-
+(* 
 
 
 
@@ -498,4 +517,23 @@ Same RIBS
   (lambda (x) 
   (set! x (lambda()(+ x 1))))
   )
-  Different RIBS
+  Different RIBS *)
+
+(* 
+(lambda (x) (set! x 5) (lambda () x ))
+Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Pair(Symbol "set!", Pair(Symbol "x", Pair(Number (Fraction(5, 1)), Nil))), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Nil))), Nil))))
+LambdaSimple (["x"], Seq [Set (Var "x", Const (Sexpr (Number (Fraction (5, 1))))); LambdaSimple ([], Var "x")]) 
+LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])
+
+box_stuffing_lists 
+(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
+- : expr' list list = [[]; []]
+
+box_stuffing_lists 
+(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
+
+
+box_stuffing_lists 
+(Seq' [LambdaSimple' ([], Var' (VarBound ("x", 0, 0))); Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1)))))]) "x";;
+
+*)
