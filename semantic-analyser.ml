@@ -63,8 +63,9 @@ exception X_syntax_error;;
 exception X_entering_lambda;;
 exception X_search_var;;
 exception X_annotate_lexical_addresses;;
-exception X_box_set;;
-
+exception X_box_make_the_change_with_box_set_get;;
+exception X_box_stuffing_lists;;
+exception X_;;
 
 
 module type SEMANTICS = sig
@@ -221,38 +222,65 @@ let search_read_write_together list_read list_write = raise X_not_yet_implemente
 (* Set'(Var'(VarParam(v, minor)), Box'(VarParam(v,minor))) *)
 let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
 
+
 (* box_set_box_get *)
 (* list.exist var in shouldbeboxed *)
-let box_make_the_change_with_box_set_get expr_tag lst_should_be_boxed = 
-  let rec boxit expr lst_should_be_boxed = match expr with
-    | Const'(s1)-> Const'(x)
+let box_make_the_change_with_box_set_get expr var_name = 
+  let rec boxit expr var_name depth = match expr with
+    | Const'(s1)-> Const'(s1)
     | Var'(VarFree v1)-> Var'(VarFree v1)
     | Var'(VarParam (v1,mn1))-> 
-                                if(lst_should_be_boxed) 
+                                if((String.equal v1 var_name) && (depth == (-1)))
                                 then BoxGet'(VarParam (v1,mn1))
                                 else Var'(VarParam (v1,mn1))
     | Var'(VarBound (v1,mj1,mn1))-> 
-    | If'(t1, th1, el1)->
-    | Seq'(l1)-> 
+                                if((String.equal v1 var_name) && (depth == mj1))
+                                then BoxGet'(VarBound (v1,mj1,mn1))
+                                else Var'(VarBound (v1,mj1,mn1))
+    | If'(t1, th1, el1)-> If'(boxit t1 var_name depth, boxit th1 var_name depth, boxit el1 var_name depth)
+    | Seq'(l1)->
+                            let func expr = boxit expr var_name depth in 
+                            let seq_body =  List.map func l1 in
+                            Seq'(seq_body)
     | Or'(l1)->
+                            let func expr = boxit expr var_name depth in 
+                            let or_body =  List.map func l1 in
+                            Or'(or_body)
     | Def'(var1, val1)->
-    | Set'(x,bval) -> 
-                      if(lst_should_be_boxed) 
-                            then BoxSet'(x, boxit  bval lst_should_be_boxed)
-                            else Set'(x, boxit bval lst_should_be_boxed)
-    | LambdaSimple'(vars1, body1)->
+                            Def'(var1, boxit val1 var_name depth)
+    | Set'(x,bval) ->       let var_type x = match x with
+                            | Var'(VarParam (v1,mn1)) ->
+                                                            if ((String.equal v1 var_name) && (depth == (-1)))
+                                                            then BoxSet'(x, boxit bval var_name depth)
+                                                            else Set'(x, boxit bval var_name depth)
+                            | Var'(VarBound (v1,mj1,mn1))-> 
+                                                            if((String.equal v1 var_name) && (depth == mj1))
+                                                            then BoxSet'(x, boxit bval var_name depth)
+                                                            else Set'(x, boxit bval var_name depth)
+                            | _ -> X_box_make_the_change_with_box_set_get
+                            in
+                            var_type x
 
-    let bady_gen_lists_rw = box expr_tag_body [] []
-    let should_be_boxed = search_read_write_together list_read list_write in
-    let seq_box_lst = create_seq_boxset should_be_boxed in 
-    let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed))
+    | LambdaSimple'(vars1, body1)->
+                            LambdaSimple'(vars1,boxit body1 var_name (depth+1))
+                            (* let bady_gen_lists_rw = box expr_tag_body [] []
+                            let should_be_boxed = search_read_write_together list_read list_write in
+                            let seq_box_lst = create_seq_boxset should_be_boxed in 
+                            let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed)) *)
 
     | LambdaOpt'(vars1, var1, body1)->
+                            LambdaOpt'(vars1, var1, boxit body1 var_name (depth+1))
     | Applic'(e1, args1)->
+                            let func expr = boxit expr var_name depth in
+                            let applic_body =  List.map func args1 in
+                            Applic'(boxit e1 var_name depth, applic_body)
     | ApplicTP'(e1, args1)->
-    | _ -> raise X_box_set in
-    (annotate expr_tag false);;
-
+                            let func expr = boxit expr var_name depth in
+                            let applic_body =  List.map func args1 in
+                            Applic'(boxit e1 var_name, applic_body)
+    | _ -> raise X_box_make_the_change_with_box_set_get
+    in
+    boxit expr var_name (-1);;
 
 
 
@@ -268,48 +296,77 @@ let extract_from_3d_array arr index result =
   | _ -> extraction (List.tl arr) index result@(if (is_read_write) then (List.hd (List.hd arr)) else (List.hd (List.tl (List.hd arr))))
   in extraction arr index result;;
 
-let box_stuffing_lists expr_tag = 
-let rec box expr [list_var_read;list_var_write] = match expr with
+
+
+
+
+  (* we check by the depth and the var_name so we take only the interesting vars that we need *)
+let box_stuffing_lists expr =
+let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = match expr with
   | Const'(s1)-> [list_var_read;list_var_write]
   | Var'(VarFree v1)-> [list_var_read;list_var_write]
-  | Var'(VarParam (v1,mn1))-> [list_var_read;list_var_write]
-  | Var'(VarBound (v1,mj1,mn1))-> [list_var_read@[Var'(VarBound (v1,mj1,mn1))]; list_var_write]
-  | Set'(x,bval) -> [list_var_read;list_var_write@[x]]
-  | If'(test_exp, then_exp, else_exp)->  If'( box test_exp [list_var_read;list_var_write], box then_exp [list_var_read;list_var_write], box else_exp [list_var_read;list_var_write])
+  | Var'(VarParam (v1,mn1))->
+                              if ((String.equal v1 var_name) && (depth == (-1)))
+                              then [list_var_read@ [Var'(VarParam (v1,mn1))] ;list_var_write]
+                              else [list_var_read;list_var_write]
+
+  | Var'(VarBound (v1,mj1,mn1))-> 
+                              if((String.equal v1 var_name) && (depth == mj1))
+                              then [list_var_read@[Var'(VarBound (v1,mj1,mn1))]; list_var_write]
+                              else [list_var_read;list_var_write]
+  
+  | Set'(x,bval) ->
+
+                    let var_type x = match x with
+                    | Var'(VarParam (v1,mn1)) ->
+                                                    if ((String.equal v1 var_name) && (depth == (-1)))
+                                                    then stuffing_lists bval var_name depth [list_var_read ;list_var_write @[Var'(VarParam (v1,mn1))]]
+                                                    else stuffing_lists bval var_name depth [list_var_read;list_var_write]
+                    | Var'(VarBound (v1,mj1,mn1))-> 
+                                                    if((String.equal v1 var_name) && (depth == mj1))
+                                                    then stuffing_lists bval var_name depth [list_var_read; list_var_write @[Var'(VarBound (v1,mj1,mn1))]]
+                                                    else stuffing_lists bval var_name depth [list_var_read;list_var_write]
+                    | _ -> X_stuffing_lists_stuffing_lists
+                    in
+                    var_type x
+
+  | If'(test_exp, then_exp, else_exp)->      let test_exp = stuffing_lists test_exp var_name depth [[];[]] in
+                                             let then_exp = stuffing_lists then_exp var_name depth [[];[]] in
+                                             let else_exp = stuffing_lists else_exp var_name depth [[];[]] in
+                                             let make_3d_array = [test_exp; then_exp; else_exp] in
+                                             let more_var_read = extract_from_3d_array make_3d_array 0 [] in
+                                             let more_var_write = extract_from_3d_array make_3d_array 1 [] in
+                                             [list_var_read@more_var_read ;list_var_write@more_var_write]
   | Seq'(seq_lst)->
-                    let current_run exp = box exp [[];[]] in
+                    let current_run exp = stuffing_lists exp [[];[]] in
                     let map_seq_of_results = List.map current_run seq_lst in
                     let more_var_read = extract_from_3d_array map_seq_of_results 0 [] in
                     let more_var_write = extract_from_3d_array map_seq_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write]
                     
   | Or'(or_lst)->
-                    let current_run exp = box exp [[];[]] in
+                    let current_run exp = stuffing_lists exp [[];[]] in
                     let map_seq_of_results = List.map current_run or_lst in
                     let more_var_read = extract_from_3d_array map_or_of_results 0 [] in
                     let more_var_write = extract_from_3d_array map_or_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write]
 
-  | Def'(var, val)-> box val [list_var_read;list_var_write]
+  | Def'(var, val)-> stuffing_lists val [list_var_read;list_var_write]
   
-  | LambdaSimple'(params_str_lst, expr_tag_body)-> 
-
+  | LambdaSimple'(params_str_lst, expr_tag_body)->
                                 (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
-                                let bady_rec = box expr_tag_body [[];[]]
+                                let bady_rec = stuffing_lists expr_tag_body [[];[]]
                                 (* [list_var_read;list_var_write] *)
-                                
-                                
-
 
 
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
   | Applic'(proc, args)->
   | ApplicTP'(proc, args)->
-  | _ -> raise X_box_set in
-  (annotate expr_tag false);;
+  | _ -> raise X_box_stuffing_lists in
+  (stuffing_lists expr var_name -1 [[];[]]);;
   
-  
-  
+
+
 (* box_numbering_system *)
 
 
@@ -355,3 +412,67 @@ LambdaSimple' (["x"],
 ApplicTP' (Var' (VarFree "list"),
 [LambdaSimple' ([], Var' (VarBound ("x", 0, 0)));
 LambdaSimple' (["y"], Set' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))]))
+
+
+
+
+(lambda (x) (lambda () x (set! x 5)))
+SAME
+
+(lambda (x) 
+  (lambda () x 
+                (lambda()(set! x 5))))
+SAME
+
+
+(lambda (x) 
+  x
+  (lambda () x 
+                (lambda()set! x 5)))
+Different
+
+
+(lambda (x) 
+  (lambda () x 
+                (lambda()set! x 5))
+  (lambda () x 
+                (lambda()set! x 5)))
+
+Different
+
+
+(lambda (x) 
+  (if x 
+        then (lambda()set! x 5))
+        else x))
+Different
+
+
+(lambda (x) 
+  (lambda () x 
+                (lambda() x (set! x 5))))
+SAME
+
+
+
+(lambda (x) 
+  x
+  (lambda () x 
+                (lambda() x (set! x 5))))
+Different
+
+
+(lambda (x) 
+  (set! x 5)
+  (lambda () x ))
+
+
+  (lambda (x) 
+  (set! x (+ x 1)))
+  )
+Same RIBS
+
+  (lambda (x) 
+  (set! x (lambda()(+ x 1))))
+  )
+  Different RIBS
