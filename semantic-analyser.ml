@@ -406,7 +406,9 @@ let extract_ribs_3d_array arr result =
   in extraction arr result;;
 
 let box_rib_stuffing expr var_name =
-    let rec rib_stuffing expr var_name depth curr_list_ref res_lists  = match expr with
+    let rec 
+    
+    expr var_name depth curr_list_ref res_lists  = match expr with
       | Const'(s1)-> res_lists
       | Var'(VarFree v1)-> res_lists
       | Var'(VarParam (v1,mn1))->
@@ -651,7 +653,7 @@ chez = Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Symbol "x", Pair(P
 tag_parser = LambdaSimple (["x"],Seq[Var "x"; LambdaSimple ([],Seq[Var "x";LambdaSimple ([],Seq [Var "x"; Set (Var "x", Const (Sexpr (Number (Fraction (5, 1)))))])])])
 run_semantics = LambdaSimple' (["x"],Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])])
 
-box_rib_stuffing (Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])]) "x";;
+let a = box_rib_stuffing (Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])]) "x";;
 - : string list ref list list =
 [[{contents = ["to_remove"]}; {contents = []}; {contents = []}];
  [{contents = ["to_remove"]}; {contents = []}; {contents = []}];
@@ -683,7 +685,7 @@ let pass var_shows =       List.map  pass_2 lst
 [{contents = []}]; 
 
 []
-
+*)
 
 [[{contents = []}; {contents = []}];
   [{contents = []}; {contents = []}];
@@ -691,16 +693,32 @@ let pass var_shows =       List.map  pass_2 lst
   []]
 
 let a var_shows = 
-let head var_shows = (List.hd var_shows) in
-let rest var_shows = (List.tl var_shows) in 
-let memq_param lst show = List.memq show lst in
-let func lst = List.map (memq_param lst) head in
-let it_go = List.map func rest
-in it_go
-;;
+  let head = (List.hd var_shows) in
+  let rest = (List.tl var_shows) in 
+  let memq_param lst show = List.memq show lst in
+  let func lst = List.map (memq_param lst) head in
+  let it_go = List.map func rest
+  in it_go
+  ;;
+
+  val a : 'a list list -> bool list list 
+
+  [[{contents = []}; {contents = []}];
+  [{contents = []}; {contents = []}];
+  [{contents = []}]; 
+  []] 
+let b = ref [];;
+let c = ref [];;
+
+a [[b; c]; [b; c];  [b];   []] ;;
+- : bool list list = [[true; true]; [true; false]; [false; false]]   
+
+[true; true; false]
+NOT
+[false; false; true]
 
 
-
+(*
 
 
 (lambda (x) 
