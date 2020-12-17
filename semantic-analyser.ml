@@ -301,7 +301,7 @@ let extract_from_3d_array arr index result =
 
 
   (* we check by the depth and the var_name so we take only the interesting vars that we need *)
-let box_stuffing_lists expr =
+let box_stuffing_lists expr var_name =
 let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = match expr with
   | Const'(s1)-> [list_var_read;list_var_write]
   | Var'(VarFree v1)-> [list_var_read;list_var_write]
@@ -330,40 +330,63 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                     in
                     var_type x
 
-  | If'(test_exp, then_exp, else_exp)->      let test_exp = stuffing_lists test_exp var_name depth [[];[]] in
+  | If'(test_exp, then_exp, else_exp)-> 
+                                            let if_lst = [test_exp; then_exp; else_exp] in
+                                            map_stuffing_lists if_lst var_name depth [list_var_read;list_var_write]
+                                            
+                                            (* let test_exp = stuffing_lists test_exp var_name depth [[];[]] in
                                              let then_exp = stuffing_lists then_exp var_name depth [[];[]] in
                                              let else_exp = stuffing_lists else_exp var_name depth [[];[]] in
                                              let make_3d_array = [test_exp; then_exp; else_exp] in
                                              let more_var_read = extract_from_3d_array make_3d_array 0 [] in
                                              let more_var_write = extract_from_3d_array make_3d_array 1 [] in
-                                             [list_var_read@more_var_read ;list_var_write@more_var_write]
+                                             [list_var_read@more_var_read ;list_var_write@more_var_write] *)
   | Seq'(seq_lst)->
-                    let current_run exp = stuffing_lists exp [[];[]] in
+                    map_stuffing_lists seq_lst var_name depth [list_var_read;list_var_write]
+                    (* let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_seq_of_results = List.map current_run seq_lst in
                     let more_var_read = extract_from_3d_array map_seq_of_results 0 [] in
                     let more_var_write = extract_from_3d_array map_seq_of_results 1 [] in
-                    [list_var_read@more_var_read ;list_var_write@more_var_write]
+                    [list_var_read@more_var_read ;list_var_write@more_var_write] *)
                     
   | Or'(or_lst)->
-                    let current_run exp = stuffing_lists exp [[];[]] in
+                    map_stuffing_lists or_lst var_name depth [list_var_read;list_var_write]
+                    (* let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_seq_of_results = List.map current_run or_lst in
                     let more_var_read = extract_from_3d_array map_or_of_results 0 [] in
                     let more_var_write = extract_from_3d_array map_or_of_results 1 [] in
-                    [list_var_read@more_var_read ;list_var_write@more_var_write]
+                    [list_var_read@more_var_read ;list_var_write@more_var_write] *)
 
-  | Def'(var, val)-> stuffing_lists val [list_var_read;list_var_write]
+  | Def'(var, val)-> stuffing_lists val var_name depth [list_var_read;list_var_write]
   
   | LambdaSimple'(params_str_lst, expr_tag_body)->
                                 (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
-                                let bady_rec = stuffing_lists expr_tag_body [[];[]]
+                                (* let bady_rec = stuffing_lists expr_tag_body [[];[]] *)
                                 (* [list_var_read;list_var_write] *)
-
+                                stuffing_lists expr_tag_body var_name (depth+1) [list_var_read;list_var_write]
 
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
-  | Applic'(proc, args)->
+                                stuffing_lists expr_tag_body var_name (depth+1) [list_var_read;list_var_write]
+  | Applic'(proc, args)-> 
+                    let lst = [proc]@args
+                    map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
+
   | ApplicTP'(proc, args)->
-  | _ -> raise X_box_stuffing_lists in
-  (stuffing_lists expr var_name -1 [[];[]]);;
+                    let lst = [proc]@args
+                    map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
+
+  | _ -> raise X_box_stuffing_lists 
+  
+  and map_stuffing_lists lst var_name depth [list_var_read;list_var_write]=
+                    let current_run exp = stuffing_lists exp var_name depth [[];[]] in
+                    let map_of_results = List.map current_run lst in
+                    let more_var_read = extract_from_3d_array map_applic_of_results 0 [] in
+                    let more_var_write = extract_from_3d_array map_applic_of_results 1 [] in
+                    [list_var_read@more_var_read ;list_var_write@more_var_write]
+  in
+
+
+  stuffing_lists expr var_name (-1) [[];[]] ;;
   
 
 
