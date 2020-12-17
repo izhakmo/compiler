@@ -512,7 +512,7 @@ end;; (* struct Semantics *)
 open Semantics;;
 
 
-
+let a = raise X_;;
 
 
 
