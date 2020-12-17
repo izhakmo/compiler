@@ -223,20 +223,6 @@ let annotate_tail_calls expr_tag =
   (annotate expr_tag false);;
 
 
-(* return the lst with intersection TODO we compare the major of varbound*)
-let search_read_write_together list_read list_write = raise X_not_yet_implemented;;
-
-(* return the lst with set for every var in lst *)
-(* Set'(Var'(VarParam(v, minor)), Box'(VarParam(v,minor))) *)
-let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
-
-
-
-(* let bady_gen_lists_rw = box expr_tag_body [] []
-                            let should_be_boxed = search_read_write_together list_read list_write in
-                            let seq_box_lst = create_seq_boxset should_be_boxed in 
-                            let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed)) *)
-
 
 
 
@@ -484,21 +470,93 @@ let box_rib_stuffing expr var_name =
       
 
       in
-      rib_stuffing expr var_name (-1) [(ref ["TEMP_remove"])] [];;
+      rib_stuffing expr var_name (-1) [(ref ["to_remove"])] [];;
 
 
 
 
 
+(* return the lst with intersection TODO we compare the major of varbound*)
+let search_read_write_together list_read list_write = raise X_not_yet_implemented;;
+
+(* return the lst with set for every var in lst *)
+(* Set'(Var'(VarParam(v, minor)), Box'(VarParam(v,minor))) *)
+let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
+
+
+
+(* let bady_gen_lists_rw = box expr_tag_body [] []
+                            let should_be_boxed = search_read_write_together list_read list_write in
+                            let seq_box_lst = create_seq_boxset should_be_boxed in 
+                            let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed)) *)
 
 
 
 
-(* box_numbering_system *)
+let box_set expr = raise X_not_yet_implemented;;
+(* 
+let box_set expr = 
+  let rec box expr =;;
+  | Const'(s1)->
+                      Const'(s1)
+  | Var'(VarFree v1)->
+                      Var'(VarFree v1)
+  | Var'(VarParam (v1,mn1))->
+                      Var'(VarParam (v1,mn1))
+  | Var'(VarBound (v1,mj1,mn1))->
+                      Var'(VarBound (v1,mj1,mn1))
+  | Set'(x,bval) -> 
+                      Set'(x,box bval)
+  | If'(test_exp, then_exp, else_exp)-> 
+                      If'(box test_exp, box then_exp, box else_exp)
+  | Seq'(seq_lst)-> 
+                      let map_box = List.map box seq_lst in
+                      Seq'(map_box)
+  | Or'(or_lst)-> 
+                      let map_box = List.map box seq_lst in
+                      Seq'(map_box)
+  | Def'(var1, val1)->
+                      Def'(var1, box val1)
+  | LambdaSimple'(params_str_lst, expr_tag_body)->
+                      let func_r_w var_name = (box_stuffing_lists expr_tag_body var_name) in
+                      let params_r_w_lists = List.map func_r_w params_str_lst in
+                      (* [ [[];[]]; [[];[]] ] *)
+                      let func_is_r_w param = if ((List.length (List.hd param) > 0 ) && (List.length (List.hd (List.tl param)) > 0) ) 
+                                              then true else false in
+                      let is_read_write_together = List.map (func_is_r_w) params_r_w_lists in
+
+
+                      let func_ribs var_namr = (box_rib_stuffing expr_tag_body var_name) in
+                      let params_ribs_lists = List.map func_ribs params_str_lst in
+                      
+                      (* [[];[];[]] *)
+                      let func_rest piece = (List.tl piece) in
+                      let params_ribs_lists_clean_first_junk_func param_appearances = List.map func_rest param_appearances in
+                      let params_ribs_cleaned = List.map params_ribs_lists_clean_first_junk_func params_ribs_lists in
+                      (* [ [[];[];[]]; [[];[];[]] ] *)
+                      let func_is_NOT_ribs_together param = in
+                      let is_ribs_NOT_together = List.map (func_is_NOT_ribs_together) params_ribs_cleaned in
+                        
+                                    
+  | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
+                        
+
+  | Applic'(e1, args1)->
+                        let map_box = List.map box args1 in
+                        Applic'((box e1), map_box)
+  | ApplicTP'(e1, args1)->
+                        let map_box = List.map box args1 in
+                        ApplicTP'((box e1), map_box)
+  
+  | _ -> raise X_box_rib_stuffing 
+
+
+  in
+  rib_stuffing expr var_name (-1) [(ref ["to_remove"])] [];;
+ *)
 
 
 
-let box_set expr_tag = raise X_not_yet_implemented;;
 
 let run_semantics expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
@@ -512,12 +570,12 @@ end;; (* struct Semantics *)
 open Semantics;;
 
 
-let a = raise X_;;
+
+
+(* 
 
 
 
-
-(*)
 
 
 let tesst35_box = test_exp' ((LambdaSimple (["x"],
@@ -589,14 +647,70 @@ SAME
 Different
 
 
+chez = Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Symbol "x", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Pair(Pair(Symbol "set!", Pair(Symbol "x", Pair(Number (Fraction(5, 1)), Nil))), Nil)))), Nil)))), Nil))))
+tag_parser = LambdaSimple (["x"],Seq[Var "x"; LambdaSimple ([],Seq[Var "x";LambdaSimple ([],Seq [Var "x"; Set (Var "x", Const (Sexpr (Number (Fraction (5, 1)))))])])])
+run_semantics = LambdaSimple' (["x"],Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])])
+
+box_rib_stuffing (Seq'[Var' (VarParam ("x", 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 0, 0));LambdaSimple' ([],Seq'[Var' (VarBound ("x", 1, 0));Set' (VarBound ("x", 1, 0), Const' (Sexpr (Number (Fraction (5, 1)))))])])]) "x";;
+- : string list ref list list =
+[[{contents = ["to_remove"]}; {contents = []}; {contents = []}];
+ [{contents = ["to_remove"]}; {contents = []}; {contents = []}];
+ [{contents = ["to_remove"]}; {contents = []}]; 
+ [{contents = ["to_remove"]}]]
+
+
+
+ [[{contents = []}; {contents = []}];
+  [{contents = []}; {contents = []}];
+  [{contents = []}]; 
+  []]
+
+
+  val memq : 'a -> 'a list -> bool
+  Same as List.mem, but uses physical equality instead of structural equality to compare list elements.
+
+
+
+let pass_2 lst = List.map  func var_shows lst
+[{contents = []}; {contents = []}]
+
+
+let pass var_shows =       List.map  pass_2 lst
+[{contents = []}; {contents = []}];
+
+[{contents = []}; {contents = []}];
+
+[{contents = []}]; 
+
+[]
+
+
+[[{contents = []}; {contents = []}];
+  [{contents = []}; {contents = []}];
+  [{contents = []}]; 
+  []]
+
+let a var_shows = 
+let head var_shows = (List.hd var_shows) in
+let rest var_shows = (List.tl var_shows) in 
+let memq_param lst show = List.memq show lst in
+let func lst = List.map (memq_param lst) head in
+let it_go = List.map func rest
+in it_go
+;;
+
+
+
+
+
 (lambda (x) 
   (set! x 5)
   (lambda () x ))
+Different
 
 
-  (lambda (x) 
+(lambda (x) 
   (set! x (+ x 1)))
-  )
 Same RIBS
 
   (lambda (x) 
@@ -614,17 +728,6 @@ box_stuffing_lists
 (LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
 - : expr' list list = [[]; []]
 
-box_stuffing_lists 
-(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
-
-
-box_stuffing_lists 
-(Seq' [LambdaSimple' ([], Var' (VarBound ("x", 0, 0))); Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1)))))]) "x";;
-
-
-
-box_rib_stuffing 
-(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
 
  
 (* with -2 *)
@@ -638,4 +741,6 @@ box_rib_stuffing
  box_rib_stuffing 
 (Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
 
-*)
+box_rib_stuffing 
+(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
+- : string list ref list list =                                                                                          [[{contents = ["TEMP_remove"]}; {contents = []}];                                                                         [{contents = ["TEMP_remove"]}]]   *)
