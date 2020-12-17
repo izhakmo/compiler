@@ -235,9 +235,6 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
   if(boolean)
   then
     let rec boxit expr var_name depth = match expr with
-      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
-      | BoxGet'(x) -> BoxGet'(x)
-      | BoxSet'(v, epx) -> BoxSet'(v, epx)
       | Const'(s1)-> Const'(s1)
       | Var'(VarFree v1)-> Var'(VarFree v1)
       | Var'(VarParam (v1,mn1))-> 
@@ -314,9 +311,6 @@ let extract_from_3d_array arr index result =
   (* we check by the depth and the var_name so we take only the interesting vars that we need *)
 let box_stuffing_lists expr var_name =
 let rec stuffing_lists expr var_name depth lists  = match expr, lists with
-  | Set'(VarParam(a, b), Box'(VarParam( x, y))) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
-  | BoxGet'(x) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
-  | BoxSet'(v, epx) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Const'(s1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarFree v1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarParam (v1,mn1)), [list_var_read;list_var_write]->
@@ -423,9 +417,6 @@ let extract_ribs_3d_array arr result =
 
 let box_rib_stuffing expr var_name =
     let rec rib_stuffing expr var_name depth curr_list_ref res_lists  = match expr with
-      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> res_lists
-      | BoxGet'(x) -> res_lists
-      | BoxSet'(v, epx) -> res_lists
       | Const'(s1)-> res_lists
       | Var'(VarFree v1)-> res_lists
       | Var'(VarParam (v1,mn1))->
@@ -539,9 +530,6 @@ let does_param_has_different_ribs var_shows =
 
 let box_set expr = 
   let rec box expr = match expr with
-  | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
-  | BoxGet'(x) -> BoxGet'(x)
-  | BoxSet'(v, epx) -> BoxSet'(v, epx)
   | Const'(s1)->
                       Const'(s1)
   | Var'(VarFree v1)->
@@ -631,7 +619,7 @@ let box_set expr =
                       | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
                       | _ -> Seq'(sets_lst@[body])
                       in
-                      LambdaSimple'(params_str_lst, box construct_sets_with_new_body)
+                      LambdaSimple'(params_str_lst, construct_sets_with_new_body)
                                     
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
   let param_str_lst_and_vs =params_str_lst@[vs_str] in 
@@ -683,7 +671,7 @@ let box_set expr =
                       | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
                       | _ -> Seq'(sets_lst@[body])
                       in
-                      LambdaOpt'(params_str_lst, vs_str,box construct_sets_with_new_body)
+                      LambdaOpt'(params_str_lst, vs_str, construct_sets_with_new_body)
 
   | Applic'(e1, args1)->
                         let map_box = List.map box args1 in
@@ -691,8 +679,6 @@ let box_set expr =
   | ApplicTP'(e1, args1)->
                         let map_box = List.map box args1 in
                         ApplicTP'((box e1), map_box)
-
-
   
   | _ -> raise X_box_rib_stuffing 
 
