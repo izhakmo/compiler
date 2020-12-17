@@ -66,7 +66,9 @@ exception X_annotate_lexical_addresses;;
 exception X_box_make_the_change_with_box_set_get;;
 exception X_box_stuffing_lists;;
 exception X_stuffing_lists_stuffing_lists;;
+exception X_box_rib_stuffing;;
 exception X_;;
+exception X_map_stuffing_lists;;
 
 
 module type SEMANTICS = sig
@@ -78,6 +80,10 @@ module type SEMANTICS = sig
   val list_without_last : 'a list -> 'a list
   val extract_from_3d_array : 'a list list list -> int -> 'a list -> 'a list 
   val box_stuffing_lists : expr' -> string -> expr' list list
+  val extract_ribs_3d_array : 'a list list -> 'a list -> 'a list 
+  val box_rib_stuffing : expr' -> string -> string list ref list list 
+
+
 
   val run_semantics : expr -> expr'
   val annotate_lexical_addresses : expr -> expr'
@@ -225,6 +231,16 @@ let search_read_write_together list_read list_write = raise X_not_yet_implemente
 let create_seq_boxset should_be_boxed = raise X_not_yet_implemented;;
 
 
+
+(* let bady_gen_lists_rw = box expr_tag_body [] []
+                            let should_be_boxed = search_read_write_together list_read list_write in
+                            let seq_box_lst = create_seq_boxset should_be_boxed in 
+                            let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed)) *)
+
+
+
+
+
 (* box_set_box_get *)
 (* list.exist var in shouldbeboxed *)
 let box_make_the_change_with_box_set_get expr var_name = 
@@ -265,10 +281,7 @@ let box_make_the_change_with_box_set_get expr var_name =
 
     | LambdaSimple'(vars1, body1)->
                             LambdaSimple'(vars1,boxit body1 var_name (depth+1))
-                            (* let bady_gen_lists_rw = box expr_tag_body [] []
-                            let should_be_boxed = search_read_write_together list_read list_write in
-                            let seq_box_lst = create_seq_boxset should_be_boxed in 
-                            let body_box = seq_box_lst@(change_var_with_box_set_get bady_rec should_be_boxed)) *)
+                            
 
     | LambdaOpt'(vars1, var1, body1)->
                             LambdaOpt'(vars1, var1, boxit body1 var_name (depth+1))
@@ -301,23 +314,22 @@ let extract_from_3d_array arr index result =
 
 
 
-
   (* we check by the depth and the var_name so we take only the interesting vars that we need *)
 let box_stuffing_lists expr var_name =
-let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = match expr with
-  | Const'(s1)-> [list_var_read;list_var_write]
-  | Var'(VarFree v1)-> [list_var_read;list_var_write]
-  | Var'(VarParam (v1,mn1))->
+let rec stuffing_lists expr var_name depth lists  = match expr, lists with
+  | Const'(s1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | Var'(VarFree v1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | Var'(VarParam (v1,mn1)), [list_var_read;list_var_write]->
                               if ((String.equal v1 var_name) && (depth == (-1)))
                               then [list_var_read@ [Var'(VarParam (v1,mn1))] ;list_var_write]
                               else [list_var_read;list_var_write]
 
-  | Var'(VarBound (v1,mj1,mn1))-> 
+  | Var'(VarBound (v1,mj1,mn1)), [list_var_read;list_var_write]-> 
                               if((String.equal v1 var_name) && (depth == mj1))
                               then [list_var_read@[Var'(VarBound (v1,mj1,mn1))]; list_var_write]
                               else [list_var_read;list_var_write]
   
-  | Set'(x,bval) ->
+  | Set'(x,bval) ,[list_var_read;list_var_write]->
 
                     let var_type x = match x with
                     | VarParam (v1,mn1) ->
@@ -332,7 +344,7 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                     in
                     var_type x
 
-  | If'(test_exp, then_exp, else_exp)-> 
+  | If'(test_exp, then_exp, else_exp), [list_var_read;list_var_write]-> 
                                             let if_lst = [test_exp; then_exp; else_exp] in
                                             map_stuffing_lists if_lst var_name depth [list_var_read;list_var_write]
 
@@ -343,7 +355,7 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                                              let more_var_read = extract_from_3d_array make_3d_array 0 [] in
                                              let more_var_write = extract_from_3d_array make_3d_array 1 [] in
                                              [list_var_read@more_var_read ;list_var_write@more_var_write] *)
-  | Seq'(seq_lst)->
+  | Seq'(seq_lst), [list_var_read;list_var_write]->
                     map_stuffing_lists seq_lst var_name depth [list_var_read;list_var_write]
                     (* let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_seq_of_results = List.map current_run seq_lst in
@@ -351,7 +363,7 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                     let more_var_write = extract_from_3d_array map_seq_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write] *)
                     
-  | Or'(or_lst)->
+  | Or'(or_lst), [list_var_read;list_var_write]->
                     map_stuffing_lists or_lst var_name depth [list_var_read;list_var_write]
                     (* let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_seq_of_results = List.map current_run or_lst in
@@ -359,52 +371,125 @@ let rec stuffing_lists expr var_name depth [list_var_read;list_var_write]  = mat
                     let more_var_write = extract_from_3d_array map_or_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write] *)
 
-  | Def'(var1, val1)-> stuffing_lists val1 var_name depth [list_var_read;list_var_write]
+  | Def'(var1, val1), [list_var_read;list_var_write]-> stuffing_lists val1 var_name depth [list_var_read;list_var_write]
   
-  | LambdaSimple'(params_str_lst, expr_tag_body)->
+  | LambdaSimple'(params_str_lst, expr_tag_body), [list_var_read;list_var_write]->
                                 (* TODO check - if: should_be_boxed is empty- then we won't return seq *)
                                 (* let bady_rec = stuffing_lists expr_tag_body [[];[]] *)
                                 (* [list_var_read;list_var_write] *)
                                 stuffing_lists expr_tag_body var_name (depth+1) [list_var_read;list_var_write]
 
-  | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
+  | LambdaOpt'(params_str_lst, vs_str, expr_tag_body), [list_var_read;list_var_write]->
                                 stuffing_lists expr_tag_body var_name (depth+1) [list_var_read;list_var_write]
-  | Applic'(e1, args1)-> 
+  | Applic'(e1, args1) ,[list_var_read;list_var_write]-> 
                     let lst = [e1]@args1 in
                     map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
 
-  | ApplicTP'(e1, args1)->
+  | ApplicTP'(e1, args1), [list_var_read;list_var_write]->
                     let lst = [e1]@args1 in
                     map_stuffing_lists lst var_name depth [list_var_read;list_var_write]
 
   | _ -> raise X_box_stuffing_lists 
   
-  and map_stuffing_lists lst var_name depth [list_var_read;list_var_write]=
+  and map_stuffing_lists lst var_name depth lists = match lists with 
+          | [list_var_read;list_var_write] ->
                     let current_run exp = stuffing_lists exp var_name depth [[];[]] in
                     let map_of_results = List.map current_run lst in
                     let more_var_read = extract_from_3d_array map_of_results 0 [] in
                     let more_var_write = extract_from_3d_array map_of_results 1 [] in
                     [list_var_read@more_var_read ;list_var_write@more_var_write]
+          | _ -> raise X_map_stuffing_lists 
   in
 
-
   stuffing_lists expr var_name (-1) [[];[]] ;;
+
   
-(* 
-  Characters 84-4992:
-  Warning 8: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched:
-  (_::_::_::_|_::[]|[])
-  Characters 62-4992:
-  Warning 8: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched:
-  (_::_::_|[])
-  Characters 5041-5482:
-  Warning 8: this pattern-matching is not exhaustive.
-  Here is an example of a case that is not matched:
-  (_::_::_::_|_::[]|[])
-  val box_stuffing_lists : expr' -> string -> expr' list list
-   *)
+
+
+
+
+  (* res_lists = [[ref a; ref b; ref c] ; [ref a] ; [ref a ; ref d]]
+
+  curr_list_ref = [ref a; ref b; ref c] *)
+
+(* [ [[]] ; [[]]     ] *)
+let extract_ribs_3d_array arr result = 
+  let rec extraction arr result = match arr with
+  | []  -> result
+  | _ -> extraction (List.tl arr) result@(List.hd arr)
+  in extraction arr result;;
+
+let box_rib_stuffing expr var_name =
+    let rec rib_stuffing expr var_name depth curr_list_ref res_lists  = match expr with
+      | Const'(s1)-> res_lists
+      | Var'(VarFree v1)-> res_lists
+      | Var'(VarParam (v1,mn1))->
+                              if ((String.equal v1 var_name) && (depth == (-1)))
+                              then res_lists@[curr_list_ref]
+                              else res_lists
+    
+      | Var'(VarBound (v1,mj1,mn1))-> 
+                              if((String.equal v1 var_name) && (depth == mj1))
+                              then res_lists@[curr_list_ref]
+                              else res_lists
+      | Set'(x,bval) ->
+
+                  let var_type x = match x with
+                    | VarParam (v1,mn1) ->
+                                                    if ((String.equal v1 var_name) && (depth == (-1)))
+                                                    then rib_stuffing bval var_name depth curr_list_ref res_lists@[curr_list_ref]
+                                                    else res_lists
+                    | VarBound (v1,mj1,mn1)-> 
+                                                    if((String.equal v1 var_name) && (depth == mj1))
+                                                    then rib_stuffing bval var_name depth curr_list_ref res_lists@[curr_list_ref]
+                                                    else res_lists
+                    | _ -> raise X_stuffing_lists_stuffing_lists
+                    in
+                    var_type x
+
+      | If'(test_exp, then_exp, else_exp)-> 
+                                            let if_lst = [test_exp; then_exp; else_exp] in
+                                            map_stuffing_ribs if_lst var_name depth curr_list_ref res_lists
+                                            
+                                            
+      | Seq'(seq_lst)-> map_stuffing_ribs seq_lst var_name depth curr_list_ref res_lists
+                        
+      | Or'(or_lst)-> map_stuffing_ribs or_lst var_name depth curr_list_ref res_lists
+                       
+      | Def'(var1, val1)-> rib_stuffing val1 var_name depth curr_list_ref res_lists
+      
+      | LambdaSimple'(params_str_lst, expr_tag_body)->
+                            rib_stuffing expr_tag_body var_name (depth+1) (curr_list_ref@[(ref params_str_lst)]) res_lists
+                                        
+      | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
+                            rib_stuffing expr_tag_body var_name (depth+1) (curr_list_ref@[(ref params_str_lst)]) res_lists
+
+      | Applic'(e1, args1)-> 
+                            let lst = [e1]@args1 in
+                            map_stuffing_ribs lst var_name depth curr_list_ref res_lists
+    
+      | ApplicTP'(e1, args1)->
+                            let lst = [e1]@args1 in
+                            map_stuffing_ribs lst var_name depth curr_list_ref res_lists
+    
+      | _ -> raise X_box_rib_stuffing 
+      
+
+    and map_stuffing_ribs lst var_name depth curr_list_ref res_lists = 
+      
+                let current_run exp = rib_stuffing exp var_name depth curr_list_ref [] in
+                let map_of_results = List.map current_run lst in
+                let more_var_ribs = extract_ribs_3d_array map_of_results [] in
+                res_lists@more_var_ribs
+      
+
+      in
+      rib_stuffing expr var_name (-1) [(ref ["TEMP_remove"])] [];;
+
+
+
+
+
 
 
 
@@ -430,9 +515,9 @@ open Semantics;;
 
 
 
-(* 
 
 
+(*)
 
 
 let tesst35_box = test_exp' ((LambdaSimple (["x"],
@@ -517,9 +602,9 @@ Same RIBS
   (lambda (x) 
   (set! x (lambda()(+ x 1))))
   )
-  Different RIBS *)
+  Different RIBS 
 
-(* 
+
 (lambda (x) (set! x 5) (lambda () x ))
 Pair(Symbol "lambda", Pair(Pair(Symbol "x", Nil), Pair(Pair(Symbol "set!", Pair(Symbol "x", Pair(Number (Fraction(5, 1)), Nil))), Pair(Pair(Symbol "lambda", Pair(Nil, Pair(Symbol "x", Nil))), Nil))))
 LambdaSimple (["x"], Seq [Set (Var "x", Const (Sexpr (Number (Fraction (5, 1))))); LambdaSimple ([], Var "x")]) 
@@ -535,5 +620,22 @@ box_stuffing_lists
 
 box_stuffing_lists 
 (Seq' [LambdaSimple' ([], Var' (VarBound ("x", 0, 0))); Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1)))))]) "x";;
+
+
+
+box_rib_stuffing 
+(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
+
+ 
+(* with -2 *)
+box_rib_stuffing 
+(LambdaSimple' (["x"],Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))])) "x";;
+- : string list ref list list =
+[[{contents = []}; {contents = ["x"]}; {contents = []}];
+ [{contents = []}; {contents = ["x"]}]] 
+
+ (* with -1 and you send the body of the lambda *)
+ box_rib_stuffing 
+(Seq' [Set' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction (5, 1))))); LambdaSimple' ([], Var' (VarBound ("x", 0, 0)))]) "x";;
 
 *)
