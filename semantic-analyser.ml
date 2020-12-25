@@ -549,7 +549,13 @@ let box_set expr =
   | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
   | Box'(x) -> Box'(x)
   | BoxGet'(x) -> BoxGet'(x)
+  | BoxSet'(v, epx) -> BoxSet'(v, box epx)
+  
+  (* =====================================================================================
+    SHOULD WE BOX INSIDE A BOXSET?
+    The tests run ok but we are not sure
   | BoxSet'(v, epx) -> BoxSet'(v, epx)
+  *)
 
   | Const'(s1)->
                       Const'(s1)
