@@ -238,7 +238,7 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
       | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
       | Box'(x) -> Box'(x)
       | BoxGet'(x) -> BoxGet'(x)
-      | BoxSet'(v, epx) -> BoxSet'(v, epx)
+      | BoxSet'(v, epx) -> BoxSet'(v, (boxit epx var_name depth))
 
       | Const'(s1)-> Const'(s1)
       | Var'(VarFree v1)-> Var'(VarFree v1)
@@ -740,40 +740,3 @@ end;; (* struct Semantics *)
 open Semantics;;
 
 
-(* 
-let test_9 = (test (Def (Var "test",
- LambdaSimple (["x"],
-  Applic (Var "list",
-   [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))])))) 
-   
-   
-  (
-Def' ( (VarFree "test"),
-LambdaSimple' (["x"],
-Seq'
-[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-ApplicTP' (Var' (VarFree "list"),
-[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
-LambdaSimple' (["y"],
-BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]))
-));;
-
-
-Def' (VarFree "test",                     
-LambdaSimple' (["x"],                                                          
-Seq'
-[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
-ApplicTP' (Var' (VarFree "list"),
-[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
-LambdaSimple' (["y"],
-BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]))
-
-
-Def' (VarFree "test",                                                           
-LambdaSimple' (["x"],                                                          
-Seq'
-[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
-ApplicTP' (Var' (VarFree "list"),
-[LambdaSimple' ([], Seq' [BoxGet' (VarBound ("x", 0, 0))]);
-LambdaSimple' (["y"],
-Seq' [BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0)))])])])) *)
