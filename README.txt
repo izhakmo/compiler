@@ -9,4 +9,3 @@ courses taught at other universities, various bits of code found on the Internet
 We realize that should our code be found to contain code from other sources, that a
 formal case shall be opened against us with va’adat mishma’at, in pursuit of disciplinary
 action.
-
