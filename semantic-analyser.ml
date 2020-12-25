@@ -235,6 +235,11 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
   if(boolean)
   then
     let rec boxit expr var_name depth = match expr with
+      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
+      | Box'(x) -> Box'(x)
+      | BoxGet'(x) -> BoxGet'(x)
+      | BoxSet'(v, epx) -> BoxSet'(v, epx)
+
       | Const'(s1)-> Const'(s1)
       | Var'(VarFree v1)-> Var'(VarFree v1)
       | Var'(VarParam (v1,mn1))-> 
@@ -311,6 +316,12 @@ let extract_from_3d_array arr index result =
   (* we check by the depth and the var_name so we take only the interesting vars that we need *)
 let box_stuffing_lists expr var_name =
 let rec stuffing_lists expr var_name depth lists  = match expr, lists with
+
+  | Set'(VarParam(a, b), Box'(VarParam( x, y))) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | Box'(x) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | BoxGet'(x) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+  | BoxSet'(v, epx) , [list_var_read;list_var_write] -> [list_var_read;list_var_write]
+
   | Const'(s1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarFree v1), [list_var_read;list_var_write] -> [list_var_read;list_var_write]
   | Var'(VarParam (v1,mn1)), [list_var_read;list_var_write]->
@@ -417,6 +428,11 @@ let extract_ribs_3d_array arr result =
 
 let box_rib_stuffing expr var_name =
     let rec rib_stuffing expr var_name depth curr_list_ref res_lists  = match expr with
+      | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> res_lists
+      | Box'(x) -> res_lists
+      | BoxGet'(x) -> res_lists
+      | BoxSet'(v, epx) -> res_lists
+
       | Const'(s1)-> res_lists
       | Var'(VarFree v1)-> res_lists
       | Var'(VarParam (v1,mn1))->
@@ -530,6 +546,11 @@ let does_param_has_different_ribs var_shows =
 
 let box_set expr = 
   let rec box expr = match expr with
+  | Set'(VarParam(a, b), Box'(VarParam( x, y))) -> Set'(VarParam(a, b), Box'(VarParam( x, y)))
+  | Box'(x) -> Box'(x)
+  | BoxGet'(x) -> BoxGet'(x)
+  | BoxSet'(v, epx) -> BoxSet'(v, epx)
+
   | Const'(s1)->
                       Const'(s1)
   | Var'(VarFree v1)->
@@ -552,39 +573,39 @@ let box_set expr =
                       Def'(var1, box val1)
   | LambdaSimple'(params_str_lst, expr_tag_body)->
 
-  let rules var_name = 
-                      (* ALL R_W *)
-                      (* let func_r_w var_name = (box_stuffing_lists expr_tag_body var_name) in *)
-                      let lst_RW = (box_stuffing_lists expr_tag_body var_name) in
-                      (* let all_params_r_w_lists = List.map func_r_w params_str_lst in *)
-                      (* [ [[];[]]; [[];[]] ] *)
+                      let rules var_name = 
+                                (* ALL R_W *)
+                                (* let func_r_w var_name = (box_stuffing_lists expr_tag_body var_name) in *)
+                                let lst_RW = (box_stuffing_lists expr_tag_body var_name) in
+                                (* let all_params_r_w_lists = List.map func_r_w params_str_lst in *)
+                                (* [ [[];[]]; [[];[]] ] *)
 
-                       (* Single R_W *)
-                      (* let func_is_r_w param = if ((List.length (List.hd param) > 0 ) && (List.length (List.hd (List.tl param)) > 0) ) then true else false in *)
-                      let rule_one_bool = if ((List.length (List.hd lst_RW) > 0 ) && (List.length (List.hd (List.tl lst_RW)) > 0) ) then true else false in
-                      (* let params_read_write = List.map (func_is_r_w) all_params_r_w_lists in *)
-                      (* let rule_one_bool = does_param_has_read_write_together *)
-                      
-                
-                      (* ALL Ribs *)
-                      (* let func_ribs var_name = (box_rib_stuffing expr_tag_body var_name) in *)
-                      let lst_ribs = (box_rib_stuffing expr_tag_body var_name) in
-                      (* let all_params_ribs_lists = List.map func_ribs params_str_lst in *)
-                      (* [[];[];[]] *)
+                                (* Single R_W *)
+                                (* let func_is_r_w param = if ((List.length (List.hd param) > 0 ) && (List.length (List.hd (List.tl param)) > 0) ) then true else false in *)
+                                let rule_one_bool = if ((List.length (List.hd lst_RW) > 0 ) && (List.length (List.hd (List.tl lst_RW)) > 0) ) then true else false in
+                                (* let params_read_write = List.map (func_is_r_w) all_params_r_w_lists in *)
+                                (* let rule_one_bool = does_param_has_read_write_together *)
+                                
+                          
+                                (* ALL Ribs *)
+                                (* let func_ribs var_name = (box_rib_stuffing expr_tag_body var_name) in *)
+                                let lst_ribs = (box_rib_stuffing expr_tag_body var_name) in
+                                (* let all_params_ribs_lists = List.map func_ribs params_str_lst in *)
+                                (* [[];[];[]] *)
 
-                      (* Single Ribs *)
-                      let func_rest piece = (List.tl piece) in
-                      (* let params_ribs_lists_clean_first_junk_func param_appearances = List.map func_rest param_appearances in *)
-                      let params_ribs_lists_clean_first_junk_func = List.map func_rest lst_ribs in
-                      
-                      (* let params_ribs_cleaned = List.map params_ribs_lists_clean_first_junk_func all_params_ribs_lists in *)
+                                (* Single Ribs *)
+                                let func_rest piece = (List.tl piece) in
+                                (* let params_ribs_lists_clean_first_junk_func param_appearances = List.map func_rest param_appearances in *)
+                                let params_ribs_lists_clean_first_junk_func = List.map func_rest lst_ribs in
+                                
+                                (* let params_ribs_cleaned = List.map params_ribs_lists_clean_first_junk_func all_params_ribs_lists in *)
 
-                      (* let rule_two_bool = does_param_has_different_ribs params_ribs_cleaned in *)
-                      let rule_two_bool = does_param_has_different_ribs params_ribs_lists_clean_first_junk_func in
-                      
-                      (* R_W  && Ribs *)
-                      let should_box_param = rule_one_bool && rule_two_bool in
-                      should_box_param 
+                                (* let rule_two_bool = does_param_has_different_ribs params_ribs_cleaned in *)
+                                let rule_two_bool = does_param_has_different_ribs params_ribs_lists_clean_first_junk_func in
+                                
+                                (* R_W  && Ribs *)
+                                let should_box_param = rule_one_bool && rule_two_bool in
+                                should_box_param 
 
                       in
                       (* All params_str *)
@@ -594,12 +615,12 @@ let box_set expr =
 
 
                       let rec recursive_sets boolean_array params_array index sets_array = match boolean_array with
-                      | [] -> sets_array
-                      | _ -> if(List.hd boolean_array) 
-                             then (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) (sets_array@[Set'(VarParam(List.hd params_array, index), Box'(VarParam(List.hd params_array,index)))] )) 
-                             else (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) sets_array) 
-                      in
-                      let sets_lst = recursive_sets all_params_boolean_box_array params_str_lst 0 []
+                        | [] -> sets_array
+                        | _ -> if(List.hd boolean_array) 
+                              then (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) (sets_array@[Set'(VarParam(List.hd params_array, index), Box'(VarParam(List.hd params_array,index)))] )) 
+                              else (recursive_sets (List.tl boolean_array) (List.tl params_array) (index + 1) sets_array) 
+                        in
+                        let sets_lst = recursive_sets all_params_boolean_box_array params_str_lst 0 []
                       in
                       
 
@@ -614,12 +635,21 @@ let box_set expr =
                       in
 
 
-
+(* 
                       let construct_sets_with_new_body = match body with 
                       | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
-                      | _ -> Seq'(sets_lst@[body])
+                      | _ -> Seq'(sets_lst@[body]) 
+*)
+
+                      let construct_sets_with_new_body = match body,sets_lst with 
+                      | Seq'(seq_list),_ -> Seq'(sets_lst@seq_list)
+                      | _,[] -> body
+                      | _,_ -> Seq'(sets_lst@[body])
+
+
                       in
-                      LambdaSimple'(params_str_lst, construct_sets_with_new_body)
+                      (* LambdaSimple'(params_str_lst, construct_sets_with_new_body) *)
+                      LambdaSimple'(params_str_lst, box construct_sets_with_new_body)
                                     
   | LambdaOpt'(params_str_lst, vs_str, expr_tag_body)->
   let param_str_lst_and_vs =params_str_lst@[vs_str] in 
@@ -666,12 +696,21 @@ let box_set expr =
                       in
 
 
-
+(* 
                       let construct_sets_with_new_body = match body with 
                       | Seq'(seq_list) -> Seq'(sets_lst@seq_list)
                       | _ -> Seq'(sets_lst@[body])
+                       *)
+                      
+                      let construct_sets_with_new_body = match body,sets_lst with 
+                      | Seq'(seq_list),_ -> Seq'(sets_lst@seq_list)
+                      | _,[] -> body
+                      | _,_ -> Seq'(sets_lst@[body])
+                      
+                      
                       in
-                      LambdaOpt'(params_str_lst, vs_str, construct_sets_with_new_body)
+                      (* LambdaOpt'(params_str_lst, vs_str, construct_sets_with_new_body) *)
+                      LambdaOpt'(params_str_lst, vs_str, box construct_sets_with_new_body)
 
   | Applic'(e1, args1)->
                         let map_box = List.map box args1 in
@@ -699,3 +738,42 @@ let run_semantics expr =
   
 end;; (* struct Semantics *)
 open Semantics;;
+
+
+(* 
+let test_9 = (test (Def (Var "test",
+ LambdaSimple (["x"],
+  Applic (Var "list",
+   [LambdaSimple ([], Var "x"); LambdaSimple (["y"], Set (Var "x", Var "y"))])))) 
+   
+   
+  (
+Def' ( (VarFree "test"),
+LambdaSimple' (["x"],
+Seq'
+[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+ApplicTP' (Var' (VarFree "list"),
+[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+LambdaSimple' (["y"],
+BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]))
+));;
+
+
+Def' (VarFree "test",                     
+LambdaSimple' (["x"],                                                          
+Seq'
+[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
+ApplicTP' (Var' (VarFree "list"),
+[LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)));
+LambdaSimple' (["y"],
+BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0))))])]))
+
+
+Def' (VarFree "test",                                                           
+LambdaSimple' (["x"],                                                          
+Seq'
+[Set' (VarParam ("x", 0), Box' (VarParam ("x", 0)));
+ApplicTP' (Var' (VarFree "list"),
+[LambdaSimple' ([], Seq' [BoxGet' (VarBound ("x", 0, 0))]);
+LambdaSimple' (["y"],
+Seq' [BoxSet' (VarBound ("x", 0, 0), Var' (VarParam ("y", 0)))])])])) *)
