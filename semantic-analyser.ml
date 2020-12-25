@@ -289,7 +289,7 @@ let box_make_the_change_with_box_set_get boolean expr var_name =
                               let func expr = boxit expr var_name depth in
                               let applic_body =  List.map func args1 in
                               ApplicTP'((boxit e1 var_name depth), applic_body)
-      | x -> x
+      (* | x -> x *)
       (* | _ -> raise X_box_make_the_change_with_box_set_get *)
       in
       boxit expr var_name (-1)
@@ -485,7 +485,7 @@ let box_rib_stuffing expr var_name =
                             let lst = [e1]@args1 in
                             map_stuffing_ribs lst var_name depth curr_list_ref res_lists
     
-      | _ -> raise X_box_rib_stuffing 
+      (* | _ -> raise X_box_rib_stuffing  *)
       
 
     and map_stuffing_ribs lst var_name depth curr_list_ref res_lists = 
@@ -719,7 +719,7 @@ let box_set expr =
                         let map_box = List.map box args1 in
                         ApplicTP'((box e1), map_box)
   
-  | _ -> raise X_box_rib_stuffing 
+  (* | _ -> raise X_box_rib_stuffing  *)
 
 
   in
