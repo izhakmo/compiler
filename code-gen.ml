@@ -2,6 +2,9 @@
 
 
 exception X_procces_const;;
+exception X_return_address_in_const_table;;
+
+exception X_generate;;
 
 
 
@@ -45,7 +48,9 @@ module type CODE_GEN = sig
      argument is the fvars table type, and the third is an expr' that has been annotated 
      by the semantic analyser.
    *)
-  val generate : (constant * (int * string)) list -> (string * int) list -> expr' -> string
+  (* val generate : (constant * (int * string)) list -> (string * int) list -> expr' -> string *)
+  val generate_helper : (constant * (int * string)) list -> (string * int) list -> expr' -> string
+  val run_gen : expr' list -> string 
 end;;
 
 module Code_Gen : CODE_GEN = struct
@@ -199,30 +204,173 @@ let allocate_mem_func arr_without_dups =
       fvar expr [];;
 
 
-      let allocate_mem_fvar_func arr_without_dups = 
-        let rec allocate_mem arr res index = match arr with
-        | [] -> res
-        | _ ->  
-                let head = (List.hd arr) in
-                let tail = (List.tl arr) in 
-                caten_head head tail res index
-      
-        and caten_head hd arr res index = (allocate_mem arr (res@[(hd, (index * 8))]) (index + 1))
-        in
-        allocate_mem arr_without_dups [] 0 ;;
+  let allocate_mem_fvar_func arr_without_dups = 
+    let rec allocate_mem arr res index = match arr with
+    | [] -> res
+    | _ ->  
+            let head = (List.hd arr) in
+            let tail = (List.tl arr) in 
+            caten_head head tail res index
+  
+    and caten_head hd arr res index = (allocate_mem arr (res@[(hd, (index * 8))]) (index + 1))
+    in
+    allocate_mem arr_without_dups [] 0 ;;
 
 
 
-        let make_fvars_tbl asts =  (allocate_mem_fvar_func (remove_duplicates_func ( map_flatten_func  (List.map procces_fvar asts) []) ));;
-
-
+    let make_fvars_tbl asts =  (allocate_mem_fvar_func (remove_duplicates_func ( map_flatten_func  (List.map procces_fvar asts) []) ));;
 
 
 
 
+    (* let generate_helper =  *)
 
   (* let make_fvars_tbl asts = raise X_not_yet_implemented;; *)
-  let generate consts fvars e = raise X_not_yet_implemented;;
+  (* let generate consts fvars e = raise X_not_yet_implemented;; *)
+
+
+
+
+  (* val return_address_in_const_table_func : ('a * (int * 'b)) list -> 'a -> string *)
+
+  let return_address_in_const_table_func table const_param =
+    let rec return_address_in_const_table table const_param = match table with
+    | [] -> raise X_return_address_in_const_table
+    | _ ->  check_hd_table (List.hd table) (List.tl table) const_param
+
+    and check_hd_table head tail const_param =
+      let (a,(b,c)) = head in
+      if (a == const_param) then (string_of_int b) else return_address_in_const_table tail const_param
+
+    in return_address_in_const_table table const_param;;
+
+
+
+  let return_address_in_fvar_table_func table fvar_param =
+    let rec return_address_in_fvar_table table fvar_param = match table with
+    | [] -> raise X_return_address_in_const_table
+    | _ ->  check_hd_table (List.hd table) (List.tl table) fvar_param
+
+    and check_hd_table head tail fvar_param =
+      let (a,b) = head in
+      if (a == fvar_param) then (string_of_int b) else return_address_in_fvar_table tail fvar_param
+
+    in return_address_in_fvar_table table fvar_param;;
+
+
+    
+
+  let generate_helper consts fvars e =
+
+    let rec generate_func consts fvars e index = match e with
+    | Const'(s1)->          String.concat "" ["mov rax, "; (return_address_in_const_table_func consts s1);"\n"]
+    | Var'(VarParam(var_name,minor)) -> 
+                            String.concat "" ["mov rax, qword [rbp + 8 ∗ (4 + ";(string_of_int minor);")]\n"]
+    | Var'(VarBound (v1,major,minor))->
+                            String.concat "" ["mov rax, qword [rbp + 8 ∗ 2]\n"; 
+                                              "mov rax, qword [rax + 8 ∗"; (string_of_int major);"]\n";
+                                              "mov rax, qword [rax + 8 ∗"; (string_of_int minor);"]\n"]
+                            
+    | Var'(VarFree v1) ->   String.concat "" ["mov rax, qword [LabelInFVarTable(v)]\n"]
+    
+    (* | Box'(v1)-> *)
+
+    | BoxGet'(v1)->         String.concat "" [generate_func consts fvars (Var'(v1)) index;
+                                              "mov rax, qword [rax]\n"]
+                                              
+    | BoxSet'(v1,e1) ->     String.concat "" [generate_func consts fvars e1 index;
+                                              "push rax\n";
+                                              generate_func consts fvars (Var'(v1)) index;
+                                              "pop qword [rax]\n";
+                                              "mov rax, sob_void\n"]
+   
+    | If'(t1, th1, el1)->   let updated_index = (index + 1) in
+                            String.concat "" [generate_func consts fvars t1 updated_index;
+                                              "cmp rax, sob_false\n";
+                                              "je Lelse";  (string_of_int updated_index); "\n";
+                                              generate_func consts fvars th1 updated_index;
+                                              "jmp Lexit";(string_of_int updated_index);"\n";
+                                              "Lelse"; (string_of_int updated_index); ":\n";
+                                              generate_func consts fvars el1 updated_index;
+                                              "Lexit"; (string_of_int updated_index); ":\n";]
+
+
+    | Seq'(e_lst) ->        (generate_seq consts fvars e_lst "" index)
+    | Or'(or_lst) ->        (generate_or consts fvars or_lst "" (index + 1))
+    | Set'(VarParam(var_name,minor), c) -> 
+                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            "mov qword [rbp + 8 * (4 + "; (string_of_int minor); ")],rax\n";
+                            "mov rax, sob_void\n"]
+    | Set'(VarBound (v1,major,minor), c) -> 
+                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            "mov rbx, qword [rbp + 8 ∗ 2]\n";
+                            "mov rbx, qword [rbx + 8 ∗ "; (string_of_int major);"]\n";
+                            "mov qword [rbx + 8 ∗ "; (string_of_int minor);"], rax\n";
+                            "mov rax, sob_void\n"]
+    | Set'(VarFree v1, c) -> 
+                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            "mov qword [LabelInFVarTable(v)], rax\n";
+                            "mov rax, sob_void\n"]
+
+    (* | Def'(var, val1)->       *)
+    
+    (* | LambdaSimple'(vars, body)-> *)
+                            
+    (* | LambdaOpt'(vars, var, body) -> *)
+                            
+    | Applic'(proc, args) -> 
+                            (applics consts fvars proc args index)
+                            
+    | ApplicTP'(proc, args) -> 
+                            (applics consts fvars proc args index)
+                            
+    | _ -> raise X_generate
+    
+
+
+
+    (* and generate_with_parenthesis consts fvars e = String.concat "" ["[";generate_func consts fvars e;"]"] *)
+
+    and generate_seq consts fvars e_lst res index = match e_lst with
+    | [] -> res
+    | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index]) index
+
+
+    and generate_or consts fvars e_lst res index = match e_lst with
+    | [] -> (String.concat "" [res;"Lexit";(string_of_int index); ":\n" ])
+    | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index;
+                                                                         "cmp rax, sob_false\n";
+                                                                         "jne Lexit";(string_of_int index); "\n"]) index
+
+    and push_applic_args consts fvars app_lst res index = match app_lst with
+    | [] -> res
+    | _ ->  (push_applic_args consts fvars (List.tl app_lst) (String.concat "" [res; generate_func consts fvars (List.hd app_lst) index;
+                                                                                "push rax\n"]) index)
+    
+    and applics consts fvars proc args index =
+        let num_args = (List.length args) in
+        let reversed_args = List.rev args in
+        let push_args = push_applic_args consts fvars reversed_args "" index in
+        let push_n = (String.concat "" [push_args; "push "; (string_of_int num_args); "\n" ;
+                                        (generate_func consts fvars proc index);
+                                        "TODO Verify that rax has type closure\n";
+                                        "TODO push rax→ env";
+                                        "TODO call rax→ code";
+                                        " SLIDE 96" ])
+        in push_n
+
+    in
+    generate_func consts fvars e 0;;
+
+
+
+
+  let run_gen expr_lst =
+    let constable = make_consts_tbl expr_lst in
+    let fvar_table = make_fvars_tbl expr_lst  in
+    generate_helper constable fvar_table (List.hd expr_lst);;
+    
+
 end;;
 open Code_Gen;;
 
@@ -300,3 +448,32 @@ ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
  
  ])
   *)
+
+(* 
+
+  make_fvars_tbl ([
+  Applic' (Var' (VarFree "y"),
+ [LambdaSimple' (["y"],
+   Seq'
+    [Set'(VarParam ("y", 0), Box' (VarParam ("y", 0)));
+      Set' (VarFree "a",
+        LambdaSimple' (["b"],
+         ApplicTP' (Var' (VarFree "a"), [Var' (VarParam ("b", 0))])));
+       Set' (VarFree "t",
+        LambdaSimple' (["x"],
+         Seq'
+          [BoxSet' (VarBound ("y", 0, 0),
+            LambdaSimple' (["j"],
+             ApplicTP' (Var' (VarBound ("x", 0, 0)),
+              [Var' (VarParam ("j", 0)); Var' (VarBound ("x", 0, 0))])));
+           Var' (VarFree "h")]));
+       ApplicTP' (BoxGet' (VarParam ("y", 0)), [Var' (VarFree "a")])])])
+  ]);;
+- : (string * int) list = [("y", 0); ("a", 8); ("h", 16)]        
+*)
+(* 
+[Seq'
+    [Set'(VarParam ("y", 0), Var'(VarParam ("y", 0)));
+      Set' (VarFree "a",
+         ApplicTP' (Var' (VarFree "a"), [Var' (VarParam ("b", 0))]))]]
+          *)
