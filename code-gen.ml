@@ -133,19 +133,20 @@ let allocate_mem_func arr_without_dups =
           caten_head head tail res index
 
   and caten_head hd arr res index = match hd with
-  | Void ->               (allocate_mem arr (res@[(Void, (index, "MAKE_VOID"))]) (index + 1))
-  | Sexpr(Nil) ->         (allocate_mem arr (res@[(Sexpr(Nil), (index, "MAKE_NIL"))]) (index + 1))
-  | Sexpr(Bool false) ->  (allocate_mem arr (res@[(Sexpr(Bool false), (index, "MAKE_BOOL(0)"))]) (index + 2))
-  | Sexpr(Bool true) ->   (allocate_mem arr (res@[(Sexpr(Bool true), (index, "MAKE_BOOL(1)"))]) (index + 2))
-  | Sexpr(Char(c1))->     (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_CHAR(";Char.escaped c1;")"])))]) (index + 2))
+  | Void ->               (allocate_mem arr (res@[(Void, (index, "MAKE_CONST_VOID\n"))]) (index + 1))
+  | Sexpr(Nil) ->         (allocate_mem arr (res@[(Sexpr(Nil), (index, "MAKE_CONST_NIL\n"))]) (index + 1))
+  | Sexpr(Bool false) ->  (allocate_mem arr (res@[(Sexpr(Bool false), (index, "MAKE_LITERAL_BOOL(0)\n"))]) (index + 2))
+  | Sexpr(Bool true) ->   (allocate_mem arr (res@[(Sexpr(Bool true), (index, "MAKE_LITERAL_BOOL(1)\n"))]) (index + 2))
+  | Sexpr(Char(c1))->     (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_CHAR(";Char.escaped c1;")\n"])))]) (index + 2))
   | Sexpr(Number(Float f1)) ->
-                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_FLOAT(";(string_of_float f1);")"])))]) (index + 9))
+                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_FLOAT(";(string_of_float f1);")\n"])))]) (index + 9))
   | Sexpr(Number(Fraction (n1, d1))) ->
-                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_FRAC(";string_of_int n1;"/" ;string_of_int d1; ")"])))]) (index + 17))
-  | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING(";s1;")"])))]) (index + 9 + (String.length s1)))
-  | Sexpr(Symbol(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_SYMBOL(";s1;")"])))]) (index + 9))
-  | Sexpr(Pair(car1, cdr1)) ->
-                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_PAIR(";"TODO ========";")"])))]) (index + 17))
+                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_RATIONAL("; string_of_int n1; ", "; string_of_int d1; ")\n"])))]) (index + 17))
+  | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING ";s1; "\n"])))]) (index + 9 + (String.length s1)))
+  (* | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING(";s1;")"])))]) (index + 9 + (String.length s1))) *)
+  | Sexpr(Symbol(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_SYMBOL(";s1;")\n"])))]) (index + 9))
+  | Sexpr(Pair(car, cdr)) ->
+                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_PAIR(";car; ", "; cdr; ")\n"])))]) (index + 17))
   in
   allocate_mem arr_without_dups [] 0 ;;
   
@@ -245,8 +246,8 @@ let allocate_mem_func arr_without_dups =
     in return_address_in_const_table table const_param;;
 
 
-
-  let return_address_in_fvar_table_func table fvar_param =
+    (* return index in fvar_table_func *)
+  let return_index_in_fvar_table_func table fvar_param =
     let rec return_address_in_fvar_table table fvar_param = match table with
     | [] -> raise X_return_address_in_const_table
     | _ ->  check_hd_table (List.hd table) (List.tl table) fvar_param
@@ -263,7 +264,7 @@ let allocate_mem_func arr_without_dups =
   let generate_helper consts fvars e =
 
     let rec generate_func consts fvars e index = match e with
-    | Const'(s1)->          String.concat "" ["mov rax, "; (return_address_in_const_table_func consts s1);"\n"]
+    | Const'(s1)->          String.concat "" ["mov rax, const_tbl+"; (return_address_in_const_table_func consts s1);"\n"]
     | Var'(VarParam(var_name,minor)) -> 
                             String.concat "" ["mov rax, qword [rbp + 8 ∗ (4 + ";(string_of_int minor);")]\n"]
     | Var'(VarBound (v1,major,minor))->
@@ -271,7 +272,9 @@ let allocate_mem_func arr_without_dups =
                                               "mov rax, qword [rax + 8 ∗"; (string_of_int major);"]\n";
                                               "mov rax, qword [rax + 8 ∗"; (string_of_int minor);"]\n"]
                             
-    | Var'(VarFree v1) ->   String.concat "" ["mov rax, qword [LabelInFVarTable(v)]\n"]
+    | Var'(VarFree v1) ->   
+                            let labelInFVarTable = return_index_in_fvar_table_func fvars v1 in
+                            String.concat "" ["mov rax, qword [ fval_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"]
     
     (* | Box'(v1)-> *)
 
@@ -282,7 +285,7 @@ let allocate_mem_func arr_without_dups =
                                               "push rax\n";
                                               generate_func consts fvars (Var'(v1)) index;
                                               "pop qword [rax]\n";
-                                              "mov rax, sob_void\n"]
+                                              "mov rax, SOB_VOID\n"]
    
     | If'(t1, th1, el1)->   let updated_index = (index + 1) in
                             String.concat "" [generate_func consts fvars t1 updated_index;
@@ -300,21 +303,21 @@ let allocate_mem_func arr_without_dups =
     | Set'(VarParam(var_name,minor), c) -> 
                             String.concat "" [(generate_func consts fvars c index); "\n";
                             "mov qword [rbp + 8 * (4 + "; (string_of_int minor); ")],rax\n";
-                            "mov rax, sob_void\n"]
+                            "mov rax, SOB_VOID\n"]
     | Set'(VarBound (v1,major,minor), c) -> 
                             String.concat "" [(generate_func consts fvars c index); "\n";
                             "mov rbx, qword [rbp + 8 ∗ 2]\n";
                             "mov rbx, qword [rbx + 8 ∗ "; (string_of_int major);"]\n";
                             "mov qword [rbx + 8 ∗ "; (string_of_int minor);"], rax\n";
-                            "mov rax, sob_void\n"]
+                            "mov rax, SOB_VOID\n"]
     | Set'(VarFree v1, c) -> 
-                            String.concat "" [(generate_func consts fvars c index); "\n";
-                            "mov qword [LabelInFVarTable(v)], rax\n";
-                            "mov rax, sob_void\n"]
+                            define_exp_set_fvar consts fvars v1 c index
 
-    (* | Def'(var, val1)->       *)
+    | Def'(VarFree v1, val1)->
+                            define_exp_set_fvar consts fvars v1 val1 index
+                            
     
-    (* | LambdaSimple'(vars, body)-> *)
+    | LambdaSimple'(vars, body)->
                             
     (* | LambdaOpt'(vars, var, body) -> *)
                             
@@ -358,6 +361,14 @@ let allocate_mem_func arr_without_dups =
                                         "TODO call rax→ code";
                                         " SLIDE 96" ])
         in push_n
+
+
+    and define_exp_set_fvar consts fvars v c index = 
+                            let labelInFVarTable = return_index_in_fvar_table_func fvars v in
+
+                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            "mov qword [ fval_tbl + (";labelInFVarTable;" * WORD_SIZE)], rax\n";
+                            "mov rax, SOB_VOID\n"]
 
     in
     generate_func consts fvars e 0;;

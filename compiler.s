@@ -10,6 +10,10 @@
 %define T_CLOSURE 9
 %define T_PAIR 10
 
+
+
+
+
 %define TYPE_SIZE 1
 %define WORD_SIZE 8
 	
@@ -118,7 +122,7 @@
 %endmacro
 
 %macro MAKE_WORDS_LIT 3
-	db %1
+		db %1
         dq %2
         dq %3
 %endmacro
@@ -138,7 +142,39 @@
 %define MAKE_CLOSURE(r, env, body) \
         MAKE_TWO_WORDS r, T_CLOSURE, env, body
 
-	
+; Make a literal of type %1
+%macro MAKE_LITERAL 2
+; followed by the definition %2
+		db %1
+		%2
+%endmacro
+
+%define MAKE_CONST_NIL
+		db T_NIL
+%define MAKE_CONST_VOID
+		db T_VOID
+%define MAKE_LITERAL_BOOL(val)
+			MAKE_LITERAL T_BOOL, db val
+%define MAKE_LITERAL_CHAR(val)
+			MAKE_LITERAL T_CHAR, db val
+%define MAKE_LITERAL_FLOAT(val)
+			MAKE_LITERAL T_FLOAT, dq val
+;%define MAKE_LITERAL_STRING(val)
+;			MAKE_LITERAL T_STRING, dq val
+%define MAKE_LITERAL_SYMBOL(val)
+			MAKE_LITERAL T_SYMBOL, dq val
+
+%macro MAKE_LITERAL_STRING 1
+	db T_STRING
+	dq (%%end_str - %%str)
+%%str:
+	db %1
+%%end_str:
+%endmacro
+
+%define SOB_VOID T_VOID
+
+
 ;;; Macros and routines for printing Scheme OBjects to STDOUT
 %define CHAR_NUL 0
 %define CHAR_TAB 9
