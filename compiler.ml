@@ -1,5 +1,8 @@
 #use "code-gen.ml";;
 #use "prims.ml";;
+(* #use "reader.ml";;
+#use "tag-parser.ml";;
+#use "semantic-analyser.ml";; *)
 
 (* 
    Auxiliary function to load the contents of a file into a string in memory.
@@ -11,6 +14,19 @@ let file_to_string f =
   let s = really_input_string ic (in_channel_length ic) in
   close_in ic;
   s;;
+
+
+
+(* let all_assignments_string_to_list_of_ast from_file =
+  (* val read_sexprs : string -> sexpr list *)
+  let reader = read_sexprs from_file in
+  (* val tag_parse_expressions : sexpr list -> expr list *)
+  let tag_parser = tag_parse_expressions reader in
+  (* val run_semantics : expr -> expr' *)
+  let semantic_analyser = List.map run_semantics tag_parser
+  in semantic_analyser;; *)
+
+(* let check = all_assignments_string_to_list_of_ast (file_to_string "check.scm");; *)
 
 (* This procedure creates the assembly code to set up the runtime environment for the compiled
    Scheme code. *)
@@ -132,6 +148,8 @@ try
 
   (* load the input file and stdlib *)
   let code =  (file_to_string "stdlib.scm") ^ (file_to_string infile) in
+  
+  (* let check = string_to_asts (file_to_string "check.scm");; *)
 
   (* generate asts for all the code *)
   let asts = string_to_asts code in
