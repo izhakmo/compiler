@@ -38,7 +38,7 @@
 )
 
 (define cons*
-	(lambda ())
+	(lambda (x)x))
 
 (define append
   (let ((null? null?)
