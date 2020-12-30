@@ -3,7 +3,8 @@
 
 exception X_procces_const;;
 exception X_return_address_in_const_table;;
-
+exception X_return_address_in_fvar_table;;
+exception X_define_param_bound_in_fvar_tbl;;
 exception X_generate;;
 
 
@@ -82,7 +83,7 @@ module Code_Gen : CODE_GEN = struct
     (* return index in fvar_table_func *)
   let return_index_in_fvar_table_func table fvar_param =
     let rec return_address_in_fvar_table table fvar_param = match table with
-    | [] -> raise X_return_address_in_const_table
+    | [] -> raise X_return_address_in_fvar_table
     | _ ->  check_hd_table (List.hd table) (List.tl table) fvar_param
 
     and check_hd_table head tail fvar_param =
@@ -233,7 +234,8 @@ let allocate_mem_func arr_without_dups =
                               let flattened = (map_flatten_func map_or []) in
                               arr@flattened
       | Set'(var, val1) ->     (fvar val1 arr)
-      | Def'(var, val1)->      (fvar val1 arr)
+      | Def'(VarFree v1, val1)->      (fvar val1 arr@[v1])
+      | Def'(v1, val1)->      raise X_define_param_bound_in_fvar_tbl
       | LambdaSimple'(vars, body)->
                               (fvar body arr)
       | LambdaOpt'(vars, var, body) ->
@@ -266,8 +268,33 @@ let allocate_mem_func arr_without_dups =
     allocate_mem arr_without_dups [] 0 ;;
 
 
+    let primitive_names_to_labels =
+      [
+        (* Type queries  *)
+        "boolean?", "boolean?"; "flonum?", "flonum?"; "rational?", "rational?";
+        "pair?", "pair?"; "null?", "null?"; "char?", "char?"; "string?", "string?";
+        "procedure?", "procedure?"; "symbol?", "symbol?";
+        (* String procedures *)
+        "string-length", "string_length"; "string-ref", "string_ref"; "string-set!", "string_set";
+        "make-string", "make_string"; "symbol->string", "symbol_to_string";
+        (* Type conversions *)
+        "char->integer", "char_to_integer"; "integer->char", "integer_to_char"; "exact->inexact", "exact_to_inexact";
+        (* Identity test *)
+        "eq?", "eq?";
+        (* Arithmetic ops *)
+        "+", "add"; "*", "mul"; "/", "div"; "=", "eq"; "<", "lt";
+        (* Additional rational numebr ops *)
+        "numerator", "numerator"; "denominator", "denominator"; "gcd", "gcd";
+        (* you can add yours here *)
+      ] ;;
 
-    let make_fvars_tbl asts =  (allocate_mem_fvar_func (remove_duplicates_func ( map_flatten_func  (List.map procces_fvar asts) []) ));;
+      
+  
+    let prims_to_fvar_func (prim, label) = prim;;
+    let add_prims_to_fvar_tbl = List.map prims_to_fvar_func primitive_names_to_labels;;
+    let make_fvars_tbl asts =  (allocate_mem_fvar_func (remove_duplicates_func (add_prims_to_fvar_tbl @ (map_flatten_func  (List.map procces_fvar asts) [])) ));;
+    (* let make_fvars_tbl asts=  (allocate_mem_fvar_func (remove_duplicates_func (add_prims_to_fvar_tbl@( map_flatten_func  (List.map procces_fvar asts) [])) ));; *)
+
 
 
 
@@ -401,7 +428,7 @@ let allocate_mem_func arr_without_dups =
 
   let run_gen expr_lst =
     let constable = make_consts_tbl expr_lst in
-    let fvar_table = make_fvars_tbl expr_lst  in
+    let fvar_table = make_fvars_tbl expr_lst in
     generate_helper constable fvar_table (List.hd expr_lst);;
     
 
@@ -484,7 +511,10 @@ ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
  
  ])
   *)
-
+  (*
+  
+  
+*)
 (* 
 
   make_fvars_tbl ([
@@ -522,3 +552,41 @@ return_address_in_const_table_func ([(Sexpr (String "moshe"), (0, "MAKE_LITERAL_
  (Sexpr (Number (Fraction (2, 1))), (35, "MAKE_LITERAL_RATIONAL(2, 1)\n"));
  (Sexpr (Number (Fraction (3, 1))), (52, "MAKE_LITERAL_RATIONAL(3, 1)\n"))])
 (Sexpr(Number (Fraction (1, 1))));; *)
+
+(* 
+generate
+(make_consts_tbl
+([(LambdaSimple' (["x"],
+Seq'
+[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+  BoxGet' (VarParam ("x", 0));
+   LambdaSimple' (["x"],
+    Seq'
+     [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+       BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
+        LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
+   LambdaSimple' ([],
+    BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]))])) (make_fvars_tbl
+    ([(LambdaSimple' (["x"],
+    Seq'
+    [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+      BoxGet' (VarParam ("x", 0));
+       LambdaSimple' (["x"],
+        Seq'
+         [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+           BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
+            LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
+       LambdaSimple' ([],
+        BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]))])) (LambdaSimple' (["x"],
+        Seq'
+        [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+          BoxGet' (VarParam ("x", 0));
+           LambdaSimple' (["x"],
+            Seq'
+             [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
+               BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
+                LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
+           LambdaSimple' ([],
+            BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))])) *)
+
+

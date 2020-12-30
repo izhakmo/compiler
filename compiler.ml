@@ -147,9 +147,12 @@ try
   let infile = Sys.argv.(1) in  
 
   (* load the input file and stdlib *)
-  let code =  (file_to_string "stdlib.scm") ^ (file_to_string infile) in
+  (* let code =  (file_to_string "stdlib.scm") ^ (file_to_string infile) in *)
   
-  (* let check = string_to_asts (file_to_string "check.scm");; *)
+  
+  (* let code =  (file_to_string "check.scm") ^ (file_to_string infile) in *)
+    let code = (file_to_string infile) in
+
 
   (* generate asts for all the code *)
   let asts = string_to_asts code in
@@ -158,7 +161,8 @@ try
   let consts_tbl = Code_Gen.make_consts_tbl asts in
 
   (* generate the fvars table *)
-  let fvars_tbl = Code_Gen.make_fvars_tbl asts in  
+
+  let fvars_tbl = Code_Gen.make_fvars_tbl asts in 
 
   (* Generate assembly code for each ast and merge them all into a single string *)
   let generate = Code_Gen.generate consts_tbl fvars_tbl in 
