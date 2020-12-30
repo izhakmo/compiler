@@ -186,7 +186,7 @@ let allocate_mem_func arr_without_dups =
                           (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_FLOAT(";(string_of_float f1);")\n"])))]) (index + 9))
   | Sexpr(Number(Fraction (n1, d1))) ->
                           (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_RATIONAL("; string_of_int n1; ", "; string_of_int d1; ")\n"])))]) (index + 17))
-  | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING ";s1; "\n"])))]) (index + 9 + (String.length s1)))
+  | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING \"";s1; "\"\n"])))]) (index + 9 + (String.length s1)))
   (* | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING(";s1;")"])))]) (index + 9 + (String.length s1))) *)
   | Sexpr(Symbol(s1)) ->  
                           let address_of_the_string = return_address_in_const_table_func res (Sexpr(String(s1))) in
@@ -323,7 +323,7 @@ let allocate_mem_func arr_without_dups =
                             
     | Var'(VarFree v1) ->   
                             let labelInFVarTable = return_index_in_fvar_table_func fvars v1 in
-                            String.concat "" ["mov rax, qword [ fval_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"]
+                            String.concat "" ["mov rax, qword [ fvar_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"]
     
     | Box'(v1)-> raise X_procces_const
 
@@ -338,7 +338,7 @@ let allocate_mem_func arr_without_dups =
    
     | If'(t1, th1, el1)->   let updated_index = (index + 1) in
                             String.concat "" [generate_func consts fvars t1 updated_index;
-                                              "cmp rax, sob_false\n";
+                                              "cmp rax, SOB_FALSE_ADDRESS\n";
                                               "je Lelse";  (string_of_int updated_index); "\n";
                                               generate_func consts fvars th1 updated_index;
                                               "jmp Lexit";(string_of_int updated_index);"\n";
@@ -390,8 +390,8 @@ let allocate_mem_func arr_without_dups =
 
     and generate_or consts fvars e_lst res index = match e_lst with
     | [] -> (String.concat "" [res;"Lexit";(string_of_int index); ":\n" ])
-    | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index;
-                                                                         "cmp rax, sob_false\n";
+    | _ ->  generate_or consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index;
+                                                                         "cmp rax, SOB_FALSE_ADDRESS\n";
                                                                          "jne Lexit";(string_of_int index); "\n"]) index
 
     and push_applic_args consts fvars app_lst res index = match app_lst with
@@ -416,7 +416,7 @@ let allocate_mem_func arr_without_dups =
                             let labelInFVarTable = return_index_in_fvar_table_func fvars v in
 
                             String.concat "" [(generate_func consts fvars c index); "\n";
-                            "mov qword [ fval_tbl + (";labelInFVarTable;" * WORD_SIZE)], rax\n";
+                            "mov qword [ fvar_tbl + (";labelInFVarTable;" * WORD_SIZE)], rax\n";
                             "mov rax, SOB_VOID\n"]
 
     in

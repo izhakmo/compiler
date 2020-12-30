@@ -149,22 +149,23 @@
 		%2
 %endmacro
 
-%define MAKE_CONST_NIL
+%define MAKE_CONST_NIL \
 		db T_NIL
-%define MAKE_CONST_VOID
+%define MAKE_CONST_VOID \
 		db T_VOID
-%define MAKE_LITERAL_BOOL(val)
+%define MAKE_LITERAL_BOOL(val) \
 			MAKE_LITERAL T_BOOL, db val
-			;MAKE_LITERAL T_BOOL, val
-;"db T_BOOL, 0"
+; %macro MAKE_LITERAL_BOOL 1
+; 			MAKE_LITERAL T_BOOL, db %1
+; %endmacro		
 
-%define MAKE_LITERAL_CHAR(val)
+%define MAKE_LITERAL_CHAR(val) \
 			MAKE_LITERAL T_CHAR, db val
-%define MAKE_LITERAL_FLOAT(val)
+%define MAKE_LITERAL_FLOAT(val) \
 			MAKE_LITERAL T_FLOAT, dq val
 ;%define MAKE_LITERAL_STRING(val)
 ;			MAKE_LITERAL T_STRING, dq val
-%define MAKE_LITERAL_SYMBOL(val)
+%define MAKE_LITERAL_SYMBOL(val) \
 			MAKE_LITERAL T_SYMBOL, dq val
 
 %macro MAKE_LITERAL_STRING 1
