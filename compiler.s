@@ -155,6 +155,9 @@
 		db T_VOID
 %define MAKE_LITERAL_BOOL(val)
 			MAKE_LITERAL T_BOOL, db val
+			;MAKE_LITERAL T_BOOL, val
+;"db T_BOOL, 0"
+
 %define MAKE_LITERAL_CHAR(val)
 			MAKE_LITERAL T_CHAR, db val
 %define MAKE_LITERAL_FLOAT(val)

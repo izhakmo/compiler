@@ -62,16 +62,57 @@ module Code_Gen : CODE_GEN = struct
 
 
 
+  (* val return_address_in_const_table_func : ('a * (int * 'b)) list -> 'a -> string *)
+
+  let return_address_in_const_table_func table const_param =
+    let rec return_address_in_const_table table const_param = match table with
+    | [] -> raise X_return_address_in_const_table
+    | _ ->  check_hd_table (List.hd table) (List.tl table) const_param
+
+    and check_hd_table head tail const_param =
+      let (a,(b,c)) = head in
+      (* match a with *)
+      (* | const_param -> (string_of_int b)
+      | _ ->return_address_in_const_table tail const_param *)
+      if (a = const_param) then (string_of_int b) else return_address_in_const_table tail const_param
+
+    in return_address_in_const_table table const_param;;
+
+
+    (* return index in fvar_table_func *)
+  let return_index_in_fvar_table_func table fvar_param =
+    let rec return_address_in_fvar_table table fvar_param = match table with
+    | [] -> raise X_return_address_in_const_table
+    | _ ->  check_hd_table (List.hd table) (List.tl table) fvar_param
+
+    and check_hd_table head tail fvar_param =
+      let (a,b) = head in
+      if (a = fvar_param) then (string_of_int b) else return_address_in_fvar_table tail fvar_param
+
+    in return_address_in_fvar_table table fvar_param;;
+
+
+
+
+
 (* val map_flatten_func : 'a list list -> 'a list -> 'a list = <fun> *)
 
 (* get a list and empty arr and return a flutten "map" *)
+(* for symbol we insert his string and the relevant symbol that point him*)
+(* for pair we insert recursivly car and cdr, and then insert the pair as well *)
 let rec map_flatten_func map res = match map with
   | [] -> res
   | _ ->  (map_flatten_func (List.tl map) (res@(List.hd map)) );;
   
 let procces_const expr = 
   let rec consts expr arr = match expr with
+    | Const'(Sexpr(Symbol(s1)))-> 
+                            arr@[(Sexpr(String(s1))); (Sexpr(Symbol(s1)))]
+    | Const'(Sexpr(Pair(car, cdr)))->
+                            arr@ (consts (Const'(Sexpr(car))) []) @ (consts (Const'(Sexpr(cdr))) []) @ [(Sexpr(Pair(car, cdr)))]
+    
     | Const'(s1)->          arr@[s1]
+    
     | Var'(v1)->            arr
     | Box'(v1)->            arr
     | BoxGet'(v1)->         arr
@@ -146,27 +187,28 @@ let allocate_mem_func arr_without_dups =
                           (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_RATIONAL("; string_of_int n1; ", "; string_of_int d1; ")\n"])))]) (index + 17))
   | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING ";s1; "\n"])))]) (index + 9 + (String.length s1)))
   (* | Sexpr(String(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_STRING(";s1;")"])))]) (index + 9 + (String.length s1))) *)
-  | Sexpr(Symbol(s1)) ->  (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_SYMBOL(";s1;")\n"])))]) (index + 9))
+  | Sexpr(Symbol(s1)) ->  
+                          let address_of_the_string = return_address_in_const_table_func res (Sexpr(String(s1))) in
+                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_SYMBOL(const_tbl+";address_of_the_string;")\n"])))]) (index + 9))
   
   | Sexpr(Pair(car, cdr)) ->
-                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_PAIR(";"TODOooooooooooooooooooooooooo"; ")\n"])))]) (index + 17))
-  (* car cdr doesnt match the signatures *)
-  (* | Sexpr(Pair(car, cdr)) ->
-                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_PAIR(";car; ", "; cdr; ")\n"])))]) (index + 17)) *)
+                          let address_of_the_car = (return_address_in_const_table_func res (Sexpr(car))) in   
+                          let address_of_the_cdr = (return_address_in_const_table_func res (Sexpr(cdr))) in
+                          (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_PAIR(const_tbl+"; address_of_the_car; ",const_tbl+"; address_of_the_cdr; ")\n"])))]) (index + 17))
   in
   allocate_mem arr_without_dups [] 0 ;;
   
 
       
   (* let make_consts_tbl asts = (allocate_mem_func (remove_duplicates_func (procces_const asts) ));; *)
-  let make_consts_tbl asts = (allocate_mem_func (remove_duplicates_func ( map_flatten_func  (List.map procces_const asts) []) ));;
+  let make_consts_tbl asts = 
+    let add_void_nil_boolTF = [Void;Sexpr(Nil);Sexpr(Bool false);Sexpr(Bool true)] 
+    in
+    (allocate_mem_func (remove_duplicates_func  (add_void_nil_boolTF @ ( map_flatten_func (List.map procces_const asts) []) )));;
   
   (* let make_consts_tbl asts = raise X_not_yet_implemented;; *)
 
-
-
-
-
+  (*let make_consts_tbl asts = raise X_not_yet_implemented;; *)
 
 
 
@@ -237,34 +279,6 @@ let allocate_mem_func arr_without_dups =
 
 
 
-  (* val return_address_in_const_table_func : ('a * (int * 'b)) list -> 'a -> string *)
-
-  let return_address_in_const_table_func table const_param =
-    let rec return_address_in_const_table table const_param = match table with
-    | [] -> raise X_return_address_in_const_table
-    | _ ->  check_hd_table (List.hd table) (List.tl table) const_param
-
-    and check_hd_table head tail const_param =
-      let (a,(b,c)) = head in
-      (* match a with *)
-      (* | const_param -> (string_of_int b)
-      | _ ->return_address_in_const_table tail const_param *)
-      if (a = const_param) then (string_of_int b) else return_address_in_const_table tail const_param
-
-    in return_address_in_const_table table const_param;;
-
-
-    (* return index in fvar_table_func *)
-  let return_index_in_fvar_table_func table fvar_param =
-    let rec return_address_in_fvar_table table fvar_param = match table with
-    | [] -> raise X_return_address_in_const_table
-    | _ ->  check_hd_table (List.hd table) (List.tl table) fvar_param
-
-    and check_hd_table head tail fvar_param =
-      let (a,b) = head in
-      if (a = fvar_param) then (string_of_int b) else return_address_in_fvar_table tail fvar_param
-
-    in return_address_in_fvar_table table fvar_param;;
 
 
     
@@ -432,13 +446,14 @@ ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
 )
 ;;
  *)
-(* 
 
+(* 
  make_consts_tbl
  ([(LambdaSimple' ([],
  Seq'
- [Const' (Sexpr (String("moshe")));
+ [Const' (Sexpr (String("moshe_hagever")));
  Const' (Sexpr (Number (Fraction(1,1))));
+ Const'(Sexpr(Pair(  (String("moshe")), (Number (Fraction(2,1))) )));
  
    Applic' (LambdaSimple' ([], Var' (VarFree "x")), []);
  Applic'
@@ -446,6 +461,7 @@ ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
  Seq'
  [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
  Const' (Sexpr (Nil));
+ Const' (Sexpr(Symbol("moshe_hagever")));
  Const' (Void);
  Const' (Sexpr (Bool(true)));
  BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
