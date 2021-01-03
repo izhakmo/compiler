@@ -176,7 +176,7 @@ let annotate_lexical_addresses expr =
     Else return expr with its children annotated according to the various rules
  *)
 
-let annotate_tail_calls expr_tag = raise X_not_yet_implemented;;
+
 
 let list_last_element lst = 
     let rev = (List.rev lst) in
@@ -738,9 +738,12 @@ let box_set expr =
 let run_semantics_first expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
 
-let run_semantics expr =
+(* let run_semantics expr =
   box_set
-    (annotate_tail_calls (annotate_lexical_addresses expr));;
+    (annotate_tail_calls (annotate_lexical_addresses expr));; *)
+
+    let run_semantics expr =
+      box_set (annotate_lexical_addresses expr);;
   
 end;; (* struct Semantics *)
 open Semantics;;

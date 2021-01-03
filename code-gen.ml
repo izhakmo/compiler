@@ -312,7 +312,7 @@ let allocate_mem_func arr_without_dups =
 
   let generate_helper consts fvars e =
 
-    let rec generate_func consts fvars e index = match e with
+    let rec generate_func consts fvars e index env_num father_varlen = match e with
     | Const'(s1)->          String.concat "" ["mov rax, const_tbl+"; (return_address_in_const_table_func consts s1);"\n"]
     | Var'(VarParam(var_name,minor)) -> 
                             String.concat "" ["mov rax, qword [rbp + 8 ∗ (4 + ";(string_of_int minor);")]\n"]
@@ -323,58 +323,59 @@ let allocate_mem_func arr_without_dups =
                             
     | Var'(VarFree v1) ->   
                             let labelInFVarTable = return_index_in_fvar_table_func fvars v1 in
-                            String.concat "" ["mov rax, qword [ fvar_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"]
+                            (* String.concat "" ["mov rax, qword [ fvar_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"] *)
+                            String.concat "" ["mov rax, qword [ fvar_tbl + ";(labelInFVarTable);"]\n"]
     
     | Box'(v1)-> raise X_procces_const
 
-    | BoxGet'(v1)->         String.concat "" [generate_func consts fvars (Var'(v1)) index;
+    | BoxGet'(v1)->         String.concat "" [generate_func consts fvars (Var'(v1)) index env_num father_varlen;
                                               "mov rax, qword [rax]\n"]
                                               
-    | BoxSet'(v1,e1) ->     String.concat "" [generate_func consts fvars e1 index;
+    | BoxSet'(v1,e1) ->     String.concat "" [generate_func consts fvars e1 index env_num father_varlen;
                                               "push rax\n";
-                                              generate_func consts fvars (Var'(v1)) index;
+                                              generate_func consts fvars (Var'(v1)) index env_num father_varlen;
                                               "pop qword [rax]\n";
-                                              "mov rax, SOB_VOID\n"]
+                                              "mov rax, SOB_VOID_ADDRESS\n"]
    
     | If'(t1, th1, el1)->   let updated_index = (index + 1) in
-                            String.concat "" [generate_func consts fvars t1 updated_index;
+                            String.concat "" [generate_func consts fvars t1 updated_index env_num father_varlen;
                                               "cmp rax, SOB_FALSE_ADDRESS\n";
                                               "je Lelse";  (string_of_int updated_index); "\n";
-                                              generate_func consts fvars th1 updated_index;
+                                              generate_func consts fvars th1 updated_index env_num father_varlen;
                                               "jmp Lexit";(string_of_int updated_index);"\n";
                                               "Lelse"; (string_of_int updated_index); ":\n";
-                                              generate_func consts fvars el1 updated_index;
+                                              generate_func consts fvars el1 updated_index env_num father_varlen;
                                               "Lexit"; (string_of_int updated_index); ":\n";]
 
 
-    | Seq'(e_lst) ->        (generate_seq consts fvars e_lst "" index)
-    | Or'(or_lst) ->        (generate_or consts fvars or_lst "" (index + 1))
+    | Seq'(e_lst) ->        (generate_seq consts fvars e_lst "" index env_num father_varlen)
+    | Or'(or_lst) ->        (generate_or consts fvars or_lst "" (index + 1) env_num father_varlen)
     | Set'(VarParam(var_name,minor), c) -> 
-                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            String.concat "" [(generate_func consts fvars c index env_num father_varlen); "\n";
                             "mov qword [rbp + 8 * (4 + "; (string_of_int minor); ")],rax\n";
-                            "mov rax, SOB_VOID\n"]
+                            "mov rax, SOB_VOID_ADDRESS\n"]
     | Set'(VarBound (v1,major,minor), c) -> 
-                            String.concat "" [(generate_func consts fvars c index); "\n";
+                            String.concat "" [(generate_func consts fvars c index env_num father_varlen); "\n";
                             "mov rbx, qword [rbp + 8 ∗ 2]\n";
                             "mov rbx, qword [rbx + 8 ∗ "; (string_of_int major);"]\n";
                             "mov qword [rbx + 8 ∗ "; (string_of_int minor);"], rax\n";
-                            "mov rax, SOB_VOID\n"]
+                            "mov rax, SOB_VOID_ADDRESS\n"]
     | Set'(VarFree v1, c) -> 
-                            define_exp_set_fvar consts fvars v1 c index
+                            define_exp_set_fvar consts fvars v1 c index env_num father_varlen
 
     | Def'(VarFree v1, val1)->
-                            define_exp_set_fvar consts fvars v1 val1 index
+                            define_exp_set_fvar consts fvars v1 val1 index env_num father_varlen
                             
     
-    (* | LambdaSimple'(vars, body)-> raise X_procces_const *)
+    | LambdaSimple'(vars, body)-> generate_lambda_simple consts fvars vars body (index + 1) (env_num +1) father_varlen
                             
-    | LambdaOpt'(vars, var, body) -> raise X_procces_const
+    (* | LambdaOpt'(vars, var, body) -> raise X_procces_const *)
                             
     | Applic'(proc, args) -> 
-                            (applics consts fvars proc args index)
+                            (applics consts fvars proc args index env_num father_varlen)
                             
     | ApplicTP'(proc, args) -> 
-                            (applics consts fvars proc args index)
+                            (applics consts fvars proc args index env_num father_varlen)
                             
     | _ -> raise X_generate
     
@@ -383,45 +384,107 @@ let allocate_mem_func arr_without_dups =
 
     (* and generate_with_parenthesis consts fvars e = String.concat "" ["[";generate_func consts fvars e;"]"] *)
 
-    and generate_seq consts fvars e_lst res index = match e_lst with
+    and generate_seq consts fvars e_lst res index env_num father_varlen= match e_lst with
     | [] -> res
-    | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index]) index
+    | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index env_num father_varlen]) index env_num father_varlen
 
 
-    and generate_or consts fvars e_lst res index = match e_lst with
+    and generate_or consts fvars e_lst res index env_num father_varlen= match e_lst with
     | [] -> (String.concat "" [res;"Lexit";(string_of_int index); ":\n" ])
-    | _ ->  generate_or consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index;
+    | _ ->  generate_or consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index env_num father_varlen;
                                                                          "cmp rax, SOB_FALSE_ADDRESS\n";
-                                                                         "jne Lexit";(string_of_int index); "\n"]) index
+                                                                         "jne Lexit";(string_of_int index); "\n"]) index env_num father_varlen
 
-    and push_applic_args consts fvars app_lst res index = match app_lst with
+    and push_applic_args consts fvars app_lst res index env_num father_varlen= match app_lst with
     | [] -> res
-    | _ ->  (push_applic_args consts fvars (List.tl app_lst) (String.concat "" [res; generate_func consts fvars (List.hd app_lst) index;
-                                                                                "push rax\n"]) index)
+    | _ ->  (push_applic_args consts fvars (List.tl app_lst) (String.concat "" [res; generate_func consts fvars (List.hd app_lst) index father_varlen;
+                                                                                "push rax\n"]) index env_num father_varlen)
     
-    and applics consts fvars proc args index =
+    and applics consts fvars proc args index env_num father_varlen=
         let num_args = (List.length args) in
         let reversed_args = List.rev args in
-        let push_args = push_applic_args consts fvars reversed_args "" index in
+        let push_args = push_applic_args consts fvars reversed_args "" index env_num father_varlen in
         let push_n = (String.concat "" [push_args; "push "; (string_of_int num_args); "\n" ;
-                                        (generate_func consts fvars proc index);
-                                        "TODO Verify that rax has type closure\n";
+                                        (generate_func consts fvars proc index env_num father_varlen);
+                                        (* "TODO Verify that rax has type closure\n"; *)
                                         "TODO push rax→ env";
                                         "TODO call rax→ code";
                                         " SLIDE 96" ])
         in push_n
 
 
-    and define_exp_set_fvar consts fvars v c index = 
+    and define_exp_set_fvar consts fvars v c index env_num father_varlen= 
                             let labelInFVarTable = return_index_in_fvar_table_func fvars v in
 
-                            String.concat "" [(generate_func consts fvars c index); "\n";
-                            "mov qword [ fvar_tbl + (";labelInFVarTable;" * WORD_SIZE)], rax\n";
-                            "mov rax, SOB_VOID\n"]
+                            let returned = String.concat "" [(generate_func consts fvars c index env_num father_varlen);
+                            (* "mov qword [ fvar_tbl + (";labelInFVarTable;" * WORD_SIZE)], rax\n"; *)
+                            "mov qword [ fvar_tbl + ";labelInFVarTable;"], rax\n";
+                            "mov rax, SOB_VOID_ADDRESS\n"]
+
+                            in returned
+
+
+
+
+    and generate_lambda_simple consts fvars vars body lbl_index env_num father_varlen=
+      let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int lbl_index);"\n";
+                                          "Lcode"; (string_of_int lbl_index); ":\n";
+                                              "push rbp\n";
+                                              "mov rbp , rsp\n";
+                                              (generate_func consts fvars body lbl_index env_num father_varlen);
+                                              "leave\n";
+                                              "ret\n";
+                                          "Lcont"; (string_of_int lbl_index); ":\n"] in
+
+      let prev_lex_env = "mov rcx, qword [rbp + WORD_SIZE * 2]\n" in
+      let alloc_ext_env = String.concat "" ["mov rax,";  env_num ;"\n";
+                                      "MALLOC rbx, rax ;make vector in length rax, put it in rbx, rbx is a pointer to vector \n";]
+      (* copy the prev_env with offset of size 1, and stop when env ==0 *)
+      let rec loop_copy_env res loop_index prev_env_size  = 
+        if (loop_index < prev_env_size) 
+        then 
+            (loop_copy_env (String.concat "" [res; "mov rdx, qword [rcx + WORD_SIZE *"; (string_of_int loop_index); "]\n";
+                                                   "mov qword [rbx + WORD_SIZE *"; (string_of_int (loop_index + 1)); "], rdx\n" ]) (loop_index + 1) prev_env_size ) 
+        else res
+      in
+      let ext_env_copy = loop_copy_env "" 0 env_num in
+      
+      let alloc_vars_vetor = String.concat "" ["mov rax,"; father_varlen;"\n";
+                                              "MALLOC rcx, rax\n";]
+      in
+
+      let rec loop_copy_vars_from_stack res loop_index varlen  = 
+        if (loop_index < varlen) 
+        then 
+            (loop_copy_vars_from_stack (String.concat "" [res; "mov rdx, qword [rbp + WORD_SIZE *"; (string_of_int (loop_index + 4)); "]\n";
+                                                   "mov qword [rcx + WORD_SIZE *"; (string_of_int loop_index); "], rdx\n" ]) (loop_index + 1) varlen ) 
+        else res
+      in
+      let ext_env_from_stack = loop_copy_vars_from_stack "" 0 father_varlen in
+    
+
+      let finish = if(env_num == 0)
+                    then                  
+                        (String.concat "" [alloc_ext_env ; "MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode"^ (string_of_int lbl_index)  ^ ")\n" ; lambda_code])
+                    else
+                        (String.concat "" [prev_lex_env; alloc_ext_env; ext_env_copy; alloc_vars_vetor; ext_env_from_stack;
+                                          "MAKE_CLOSURE(rax, rbx, Lcode"^ (string_of_int lbl_index)  ^ ")\n" ; lambda_code])
+      in
+      finish
+
+
+      
+
+
+
+
+
 
     in
-    generate_func consts fvars e 0;;
+    generate_func consts fvars e 0 (-1) 0;;
 
+
+    
   let generate consts fvars e = generate_helper consts fvars e;;
 
 

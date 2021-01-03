@@ -1,1 +1,1 @@
-(and 42 #f 43)
+(lambda (x) x)

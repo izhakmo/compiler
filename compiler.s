@@ -176,7 +176,7 @@
 %%end_str:
 %endmacro
 
-%define SOB_VOID T_VOID
+
 
 
 ;;; Macros and routines for printing Scheme OBjects to STDOUT
