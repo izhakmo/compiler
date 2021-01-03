@@ -444,8 +444,8 @@ let allocate_mem_func arr_without_dups =
                                               "ret\n";
                                           "Lcont"; (string_of_int lbl_index); ":\n"] in
 
-      let prev_lex_env = "mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env\n" in
-      let alloc_ext_env = String.concat "" ["mov rax,";  (string_of_int (env_num*8)) ;" ;size of ext env\n";
+      let prev_lex_env = "\n\nmov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env\n" in
+      let alloc_ext_env = String.concat "" ["mov rax, WORD_SIZE *";  (string_of_int env_num) ;" ;size of ext env\n";
                                       "MALLOC rbx, rax ;malloc vector for ext env \n";] in
       (* copy the prev_env with offset of size 1, and stop when env ==0 *)
       let rec loop_copy_env res loop_index prev_env_size  = 
@@ -455,9 +455,9 @@ let allocate_mem_func arr_without_dups =
                                                    "mov qword [rbx + WORD_SIZE *"; (string_of_int (loop_index + 1)); "], rdx ;loop_copy_env\n" ]) (loop_index + 1) prev_env_size ) 
         else res
       in
-      let ext_env_copy = loop_copy_env "" 1 env_num in
+      let ext_env_copy = loop_copy_env "" 0 env_num in
       
-      let alloc_vars_vetor = String.concat "" ["mov rax,"; (string_of_int (father_varlen*8));" ;size of new major 0 vars\n";
+      let alloc_vars_vetor = String.concat "" ["mov rax, WORD_SIZE *"; (string_of_int father_varlen);" ;size of new major 0 vars\n";
                                               "MALLOC rcx, rax ;malloc vector major 0 vars\n";]
       in
 
@@ -472,8 +472,13 @@ let allocate_mem_func arr_without_dups =
       let params = "mov qword [rbx + 0] , rcx\n" in
 
       let finish = if(env_num == 0)
-                    then                  
+                      then                  
                         (String.concat "" ["MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode"^ (string_of_int lbl_index)  ^ ")\n" ; lambda_code])
+                    else if (env_num == 1)
+                      then
+                    (* there is no env to copy so no ext_env_copy when env_num == 1 *)
+                        (String.concat "" [prev_lex_env; alloc_ext_env; alloc_vars_vetor; ext_env_from_stack;params;
+                                          "MAKE_CLOSURE(rax, rbx, Lcode"^ (string_of_int lbl_index)  ^ ")\n" ; lambda_code])
                     else
                         (String.concat "" [prev_lex_env; alloc_ext_env; ext_env_copy; alloc_vars_vetor; ext_env_from_stack;params;
                                           "MAKE_CLOSURE(rax, rbx, Lcode"^ (string_of_int lbl_index)  ^ ")\n" ; lambda_code])
