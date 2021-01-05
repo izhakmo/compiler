@@ -476,10 +476,12 @@ let allocate_mem_func arr_without_dups =
 
 
     and generate_lambda_simple consts fvars vars body lbl_index env_num father_varlen=
-
+      
+      (* magically generate an unique lbl_index based on the ref label we convert the addres from int ref to int with magic *)
       let a = (ref lbl_index) in
       let address = 2*(Obj.magic a) in
       (* Printf.printf "%d" address;; *)
+
       let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
                                           "Lcode"; (string_of_int address); ":\n";
                                               "push rbp\n";
