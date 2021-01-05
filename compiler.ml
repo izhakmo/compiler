@@ -51,7 +51,7 @@ let make_prologue consts_tbl fvars_tbl =
     (* Additional rational numebr ops *)
     "numerator", "numerator"; "denominator", "denominator"; "gcd", "gcd";
     (* you can add yours here *)
-      "apply", "apply";
+      (* "apply", "apply"; *)
       "car", "car";
       "cdr", "cdr"; 
       "cons", "cons";

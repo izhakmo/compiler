@@ -316,7 +316,7 @@ module Prims : PRIMS = struct
    (* rsi = cons pointer *)
    let self_set_car = make_binary "set_car" "mov qword [rsi+TYPE_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
    let self_set_cdr = make_binary "set_cdr" "mov qword [rsi+TYPE_SIZE+WORD_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
-   
+   (* let self_apply = "apply" ;; *)
 
   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
