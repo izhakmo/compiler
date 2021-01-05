@@ -286,6 +286,12 @@ let allocate_mem_func arr_without_dups =
         (* Additional rational numebr ops *)
         "numerator", "numerator"; "denominator", "denominator"; "gcd", "gcd";
         (* you can add yours here *)
+        "apply", "apply";
+         "car", "car";
+         "cdr", "cdr"; 
+         "cons", "cons";
+         "set-car!", "set_car";
+         "set-cdr!", "set_cdr";  
       ] ;;
 
       
@@ -326,7 +332,7 @@ let allocate_mem_func arr_without_dups =
                             (* String.concat "" ["mov rax, qword [ fvar_tbl + (";(labelInFVarTable);" * WORD_SIZE)]\n"] *)
                             String.concat "" ["mov rax, qword [ fvar_tbl + ";(labelInFVarTable);"]\n"]
     
-    | Box'(v1)-> raise X_procces_const
+    | Box'(v1)-> raise X_generate
 
     | BoxGet'(v1)->         String.concat "" [generate_func consts fvars (Var'(v1)) index env_num father_varlen;
                                               "mov rax, qword [rax]\n"]

@@ -1,3 +1,4 @@
-(define y (lambda (x y) (lambda (z) (lambda (e) y))))
-
-(((y 5 4) 3) 9)
+(define x (cons 1 2))
+(set-car! x 4)
+(set-cdr! x 4)
+x

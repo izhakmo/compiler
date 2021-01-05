@@ -308,8 +308,18 @@ module Prims : PRIMS = struct
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
 
+
+    (* make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);; *)
+   let self_cons = make_binary "cons" "MAKE_PAIR(rax, rsi, rdi)" ;;
+   let self_car = make_unary "car" "CAR rax,rsi";;
+   let self_cdr = make_unary "cdr" "CDR rax,rsi";;
+   (* rsi = cons pointer *)
+   let self_set_car = make_binary "set_car" "mov qword [rsi+TYPE_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
+   let self_set_cdr = make_binary "set_cdr" "mov qword [rsi+TYPE_SIZE+WORD_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
+   let self_apply = "apply"
+
   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
      string of primitive procedures. *)
-  let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops];;
+  let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops ; self_cons ;self_car ;self_cdr; self_set_car; self_set_cdr];;
 end;;
