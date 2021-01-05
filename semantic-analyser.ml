@@ -738,12 +738,12 @@ let box_set expr =
 let run_semantics_first expr = (annotate_tail_calls (annotate_lexical_addresses expr));;
 
 
-(* let run_semantics expr =
+let run_semantics expr =
   box_set
-    (annotate_tail_calls (annotate_lexical_addresses expr));; *)
-
+    (annotate_tail_calls (annotate_lexical_addresses expr));;
+(* 
     let run_semantics expr =
-      box_set (annotate_lexical_addresses expr);;
+      box_set (annotate_lexical_addresses expr);; *)
   
 end;; (* struct Semantics *)
 open Semantics;;

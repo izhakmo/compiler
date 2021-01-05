@@ -1,4 +1,5 @@
-(define x (cons 1 2))
-(set-car! x 4)
-(set-cdr! x 4)
-x
+(letrec ((loop (lambda (r)
+				(if (= r 0)
+					0
+					(loop (- r 1))))))
+	(loop 220000))
