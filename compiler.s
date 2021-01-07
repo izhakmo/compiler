@@ -176,6 +176,24 @@
 %%end_str:
 %endmacro
 
+%define PARAM_COUNT qword [rbp + (3 * 8)]
+
+;%1 = size of frame(constant)
+%macro SHIFT_FRAME 1
+		push rax
+		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+		add rax, 4 				;(not TODO) 4 cells if not magic , 5 if use of magic
+		
+%assign i 1
+%rep %1
+		dec rax
+		push qword [rbp- i*WORD_SIZE]
+		pop  qword [rbp+ rax*WORD_SIZE]
+%assign i i+1
+%endrep
+
+pop rax
+%endmacro
 
 
 

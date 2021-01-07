@@ -1,5 +1,4 @@
-(letrec ((loop (lambda (r)
-				(if (= r 0)
-					0
-					(loop (- r 1))))))
-	(loop 220000))
+((lambda () ((lambda () 1))))
+(define f (lambda () ((lambda () 1))))
+(f)
+3

@@ -54,6 +54,8 @@ module type CODE_GEN = sig
   val generate : (constant * (int * string)) list -> (string * int) list -> expr' -> string
   val generate_helper : (constant * (int * string)) list -> (string * int) list -> expr' -> string
   val run_gen : expr' list -> string 
+
+  val one_to_three : string -> expr' list
 end;;
 
 module Code_Gen : CODE_GEN = struct
@@ -428,8 +430,8 @@ let allocate_mem_func arr_without_dups =
                                         "add rsp , rbx; pop args\n"])
         in push_n
 
-    and move_and_pop_stack_frame_TP father_varlen num_args = 
-        let space3_plusN = (3 + father_varlen) in
+    (* and move_and_pop_stack_frame_TP father_varlen num_args = 
+        let space3_plusN = (4 + father_varlen) in
         let rec move_pop res father_cells_remain my_cells_remain index =
           if (my_cells_remain > 0) 
           then 
@@ -440,7 +442,7 @@ let allocate_mem_func arr_without_dups =
           (move_pop (String.concat "" [res; "pop rcx\n ";])  (father_cells_remain - 1) (my_cells_remain - 1) (index+1))
           else res
 
-        in (move_pop "" space3_plusN num_args 0)
+        in (move_pop "" space3_plusN num_args 0) *)
 
     and applicTP consts fvars proc args index env_num father_varlen=
         let num_args = (List.length args) in
@@ -456,7 +458,18 @@ let allocate_mem_func arr_without_dups =
                                         (* "jmp rax→ code"; *)
                                         "CLOSURE_CODE rbx, rax\n      ;move_and_pop_stack_frame_TP\n";
                                         (* fix the stack *)
-                                        (move_and_pop_stack_frame_TP father_varlen num_args);
+                                        
+                                        "mov rcx,0\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
+                                        "mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame\n";
+                                        "add rcx, 4\n  ;(not TODO) 4 cells if not magic , 5 if use of magic\n";
+
+                                        "SHIFT_FRAME " ; (string_of_int (4+num_args)) ;"\n";
+
+                                        (* "mov ecx, " ; (string_of_int (4+num_args)) ;"\n";
+                                        "SHIFT_FRAME ecx \n"; *)
+                                        (* (move_and_pop_stack_frame_TP father_varlen num_args); *)
+                                        "shl rcx , 3\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
+                                        "add rsp,rcx\n";
                                         (* " SLIDE 107"  *)
                                         "jmp rbx\n";
                                         ])
@@ -555,6 +568,11 @@ let allocate_mem_func arr_without_dups =
     let fvar_table = make_fvars_tbl expr_lst in
     generate_helper constable fvar_table (List.hd expr_lst);;
     
+
+    let one_to_three s = List.map Semantics.run_semantics
+    (Tag_Parser.tag_parse_expressions
+       (Reader.read_sexprs s));;
+
 
 end;;
 open Code_Gen;;
