@@ -468,7 +468,7 @@ let allocate_mem_func arr_without_dups =
                                         (* "mov ecx, " ; (string_of_int (4+num_args)) ;"\n";
                                         "SHIFT_FRAME ecx \n"; *)
                                         (* (move_and_pop_stack_frame_TP father_varlen num_args); *)
-                                        "shl rcx , 3\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
+                                        "shl rcx , 3\n  ;zi clean stack if there is difference of args. rcx = 4+args rcx *8\n";
                                         "add rsp,rcx\n";
                                         (* " SLIDE 107"  *)
                                         "jmp rbx\n";
