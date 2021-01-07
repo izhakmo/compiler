@@ -196,6 +196,62 @@ pop rax
 %endmacro
 
 
+;%1 = size of frame(constant)
+%macro SHIFT_FRAME_DOWN_BY_ONE_CELL 1
+		;this macro creates extra space for variadic when the variadic is empty list
+		push rax
+		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+		mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+		add rax, 2 				;rax = n+2 , we have n+3 cells
+		
+%assign i 0
+%rep %1
+		push qword [rbp + (i*WORD_SIZE)]
+		pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
+%assign i i+1
+%endrep
+;adding of nil to the new cell variadic
+shl rax, 3
+;MAKE_PAIR(rdx,SOB_NIL_ADDRESS, SOB_NIL_ADDRESS)
+mov qword [rbp + rax], SOB_NIL_ADDRESS
+inc rcx
+mov qword [rbp + (2 * 8)] ,rcx
+pop rax
+%endmacro
+
+
+;%1 = num of params to make a varidaic list
+%macro CREATE_VARIADIC_OPT_LIST 1
+		push rax
+		push rbx
+		push rcx
+		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+		add rax, 2		;rax=n+2 last item, last cell of args
+		
+
+		;first loop run
+		mov rdx, qword [rbp+ rax*WORD_SIZE]				;from the lecture this is last param int=8
+		MAKE_PAIR(rcx,rdx, SOB_NIL_ADDRESS)				;rcx hold first pair
+;start from the second loop
+%assign i 2
+%rep %1				
+									;we do the loop %1 minus 2 times
+		mov rbx, rcx				;mov to rbx the old pair
+		dec rax
+		mov rdx, qword [rbp+ rax*WORD_SIZE] ;next arg on stack
+		MAKE_PAIR(rcx,rdx, rbx)
+		
+%assign i i+1
+%endrep
+
+;put the list in the first variadic cell
+inc rax
+mov qword [rbp+ rax*WORD_SIZE] , rcx	;put list in variadic cell
+
+pop rcx
+pop rbx
+pop rax
+%endmacro
 
 ;;; Macros and routines for printing Scheme OBjects to STDOUT
 %define CHAR_NUL 0

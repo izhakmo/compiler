@@ -380,7 +380,7 @@ let allocate_mem_func arr_without_dups =
     
     | LambdaSimple'(vars, body)-> generate_lambda_simple consts fvars vars body (index + 1) (env_num +1) father_varlen
                             
-    (* | LambdaOpt'(vars, var, body) -> raise X_procces_const *)
+    | LambdaOpt'(vars, variadic, body) -> generate_lambda_opt consts fvars vars variadic body (index + 1) (env_num +1) father_varlen
                             
     | Applic'(proc, args) -> 
                             (applics consts fvars proc args index env_num father_varlen)
@@ -468,7 +468,7 @@ let allocate_mem_func arr_without_dups =
                                         (* "mov ecx, " ; (string_of_int (4+num_args)) ;"\n";
                                         "SHIFT_FRAME ecx \n"; *)
                                         (* (move_and_pop_stack_frame_TP father_varlen num_args); *)
-                                        "shl rcx , 3\n  ;zi clean stack if there is difference of args. rcx = 4+args rcx *8\n";
+                                        "shl rcx , 3\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
                                         "add rsp,rcx\n";
                                         (* " SLIDE 107"  *)
                                         "jmp rbx\n";
@@ -547,6 +547,98 @@ let allocate_mem_func arr_without_dups =
       finish
 
 
+      and generate_lambda_opt consts fvars vars variadic body lbl_index env_num father_varlen =
+        (* magically generate an unique lbl_index based on the ref label we convert the addres from int ref to int with magic *)
+        let a = (ref lbl_index) in
+        let address = 2*(Obj.magic a) in
+        (* Printf.printf "%d" address;; *)
+        
+        let adjust_the_stack_for_the_optional = String.concat "" ["mov rcx, PARAM_COUNT\n";
+                                                                  "cmp rcx, "; (string_of_int (List.length vars)); "\n";
+                                                                  "je LnoVariadic"; (string_of_int address) ; "\n";
+                                                                  
+                                                                  ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
+                                                                  "mov rcx, PARAM_COUNT\n";
+                                                                  (* check this 6-3 or 6-3+1?*)
+                                                                  "sub rcx, "; (string_of_int (List.length vars)) ;" ; rcx contains the length of varicadic\n";
+                                                                  (* check this *)
+                                                                  "CREATE_VARIADIC_OPT_LIST rcx\n";
+                                                                  
+
+                                                                  "mov rdx, "; (string_of_int ((List.length vars)+1)) ;" ; rdx contains the length of vars plus 1 (vars +variadic len)\n";
+                                                                  "mov PARAM_COUNT, rdx\n";
+
+
+                                                                  "SHIFT_FRAME rcx\n";
+
+                                                                  (* need to pop rcx times *)
+
+                                                                  
+                                                                  
+                                                                  "jmp Optcont"; (string_of_int address) ; "\n";
+                                                                  "LnoVariadic"; (string_of_int address) ; ":\n";
+
+                                                                  "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int (List.length vars)) ;"\n";
+                                                                  "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n";
+                                                                  
+                                                                  (* "inc rcx\n"; *)
+                                                                  (* "mov PARAM_COUNT , rcx\n"; *)
+                                                                  
+                                                                  "Optcont"; (string_of_int address) ; ":\n";
+                                                                  ]
+        in
+
+        let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
+                                            "Lcode"; (string_of_int address); ":\n";
+                                                adjust_the_stack_for_the_optional ;
+                                                "push rbp\n";
+                                                "mov rbp , rsp\n";
+                                                (* ";ref fuck you "; (string_of_int address) ;"\n"; *)
+                                                (generate_func consts fvars body lbl_index env_num (List.length vars));
+                                                "leave\n";
+                                                "ret\n";
+                                            "Lcont"; (string_of_int address); ":\n"] in
+
+        let prev_lex_env = "\n\nmov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env\n" in
+        let alloc_ext_env = String.concat "" ["mov rax, WORD_SIZE *";  (string_of_int env_num) ;" ;size of ext env\n";
+                                        "MALLOC rbx, rax ;malloc vector for ext env \n";] in
+        (* copy the prev_env with offset of size 1, and stop when env ==0 *)
+        let rec loop_copy_env res loop_index prev_env_size  = 
+          if (loop_index < prev_env_size) 
+          then 
+              (loop_copy_env (String.concat "" [res; "mov rdx, qword [rcx + WORD_SIZE *"; (string_of_int loop_index); "] ;loop_copy_env\n";
+                                                    "mov qword [rbx + WORD_SIZE *"; (string_of_int (loop_index + 1)); "], rdx ;loop_copy_env\n" ]) (loop_index + 1) prev_env_size ) 
+          else res
+        in
+        let ext_env_copy = loop_copy_env "" 0 env_num in
+        
+        let alloc_vars_vetor = String.concat "" ["mov rax, WORD_SIZE *"; (string_of_int father_varlen);" ;size of new major 0 vars\n";
+                                                "MALLOC rcx, rax ;malloc vector major 0 vars\n";]
+        in
+
+        let rec loop_copy_vars_from_stack res loop_index varlen  = 
+          if (loop_index < varlen) 
+          then 
+              (loop_copy_vars_from_stack (String.concat "" [res; "mov rdx, qword [rbp + "; (string_of_int (8*(loop_index + 4))); "] ;loop_copy_vars_from_stack\n";
+                                                    "mov qword [rcx + "; (string_of_int (8*loop_index)); "], rdx ;loop_copy_vars_from_stack\n" ]) (loop_index + 1) varlen ) 
+          else res
+        in
+        let ext_env_from_stack = loop_copy_vars_from_stack "" 0 father_varlen in
+        let params = "mov qword [rbx + 0] , rcx\n" in
+
+        let finish = if(env_num == 0)
+                        then                  
+                          (String.concat "" ["MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode"^ (string_of_int address)  ^ ")\n" ; lambda_code])
+                      else if (env_num == 1)
+                        then
+                      (* there is no env to copy so no ext_env_copy when env_num == 1 *)
+                          (String.concat "" [prev_lex_env; alloc_ext_env; alloc_vars_vetor; ext_env_from_stack;params;
+                                            "MAKE_CLOSURE(rax, rbx, Lcode"^ (string_of_int address)  ^ ")\n" ; lambda_code])
+                      else
+                          (String.concat "" [prev_lex_env; alloc_ext_env; ext_env_copy; alloc_vars_vetor; ext_env_from_stack;params;
+                                            "MAKE_CLOSURE(rax, rbx, Lcode"^ (string_of_int address)  ^ ")\n" ; lambda_code])
+        in
+        finish
       
 
 

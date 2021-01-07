@@ -1,4 +1,3 @@
-((lambda () ((lambda () 1))))
-(define f (lambda () ((lambda () 1))))
-(f)
-3
+(
+    (lambda () (lambda (a b c d e) e))
+    'a 'b 'c 'd 'e)
