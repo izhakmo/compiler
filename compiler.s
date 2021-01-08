@@ -177,6 +177,7 @@
 %endmacro
 
 %define PARAM_COUNT qword [rbp + (3 * 8)]
+%define PARAM_COUNT_OPT qword [rbp + (2 * 8)]
 
 ;%1 = size of frame(constant)
 %macro SHIFT_FRAME 1
@@ -195,13 +196,69 @@
 pop rax
 %endmacro
 
+;%1 = size of frame(constant)
+; %macro LAMBDA_OPT_SHIFT_FRAME 1
+; 		push rax
+; 		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+; 		add rax, 3 		;4+3=7			
+		
+; %assign i 1
+; %rep %1
+; 		dec rax
+; 		push qword [rbp- i*WORD_SIZE]
+; 		pop  qword [rbp+ rax*WORD_SIZE]
+; %assign i i+1
+; %endrep
+
+; pop rax
+; %endmacro
+
+;get rsi shift gap
+%macro LAMBDA_OPT_SHIFT_FRAME 1
+		push rax
+		push rbx
+		push rcx
+		push rdx
+		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+		add rax, 2 		;4+2=6 is the place of the last cell
+		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+		add rcx, 3 		;4+3=7 is the num of iterations
+		
+; %assign i 1
+		mov rbx, 1		;from 1 to 7 include
+		%%start_loop:
+; %rep %1
+		cmp rbx, rcx
+		jg %%finish_loop
+
+		push qword [rbp+ rax*WORD_SIZE]
+		mov rdx, %1
+		add rdx, rax
+		pop  qword [rbp+ (rdx*WORD_SIZE)]
+		dec rax
+
+; %assign i i+1
+		inc rbx
+		jmp %%start_loop
+		
+; %endrep
+%%finish_loop:
+pop rdx
+pop rcx
+pop rbx
+pop rax
+%endmacro
+
+
+
 
 ;%1 = size of frame(constant)
 %macro SHIFT_FRAME_DOWN_BY_ONE_CELL 1
 		;this macro creates extra space for variadic when the variadic is empty list
 		push rax
-		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
-		mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+		push rcx
+		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
 		add rax, 2 				;rax = n+2 , we have n+3 cells
 		
 %assign i 0
@@ -216,8 +273,42 @@ shl rax, 3
 mov qword [rbp + rax], SOB_NIL_ADDRESS
 inc rcx
 mov qword [rbp + (2 * 8)] ,rcx
+pop rcx
 pop rax
 %endmacro
+
+
+; ;%1 = num of params to make a varidaic list
+; %macro CREATE_VARIADIC_OPT_LIST 1
+; 		push rax
+; 		push rbx
+; 		push rcx
+; 		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+; 		add rax, 2		;should be n+3 but we do one loop iteration outside.. so rax=n+2 last item, last cell of args
+		
+
+; 		;first loop run
+; 		mov rdx, qword [rbp+ rax*WORD_SIZE]				;from the lecture this is last param int=8
+; 		MAKE_PAIR(rcx,rdx, SOB_NIL_ADDRESS)				;rcx hold first pair
+; ;start from the second loop
+; %assign i 2
+; %rep %1			
+; 									;we do the loop %1 minus 2 times
+; 		mov rbx, rcx				;mov to rbx the old pair
+; 		dec rax
+; 		mov rdx, qword [rbp+ rax*WORD_SIZE] ;next arg on stack
+; 		MAKE_PAIR(rcx,rdx, rbx)
+		
+; %assign i i+1
+; %endrep
+
+; mov qword [rbp+ rax*WORD_SIZE] , rcx	;put list in variadic cell
+
+; pop rcx
+; pop rbx
+; pop rax
+; %endmacro
+
 
 
 ;%1 = num of params to make a varidaic list
@@ -225,33 +316,43 @@ pop rax
 		push rax
 		push rbx
 		push rcx
-		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
-		add rax, 2		;rax=n+2 last item, last cell of args
+
+		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT_OPT of father frame
+		add rax, 2		;should be n+3 but we do one loop iteration outside.. so rax=n+2 last item, last cell of args
 		
 
 		;first loop run
 		mov rdx, qword [rbp+ rax*WORD_SIZE]				;from the lecture this is last param int=8
 		MAKE_PAIR(rcx,rdx, SOB_NIL_ADDRESS)				;rcx hold first pair
 ;start from the second loop
-%assign i 2
-%rep %1				
+
+; %assign i 1
+		mov rdi, 2
+		%%start_loop:
+; %rep %1
+		cmp rdi, %1
+		jg %%finish_loop	
 									;we do the loop %1 minus 2 times
 		mov rbx, rcx				;mov to rbx the old pair
 		dec rax
 		mov rdx, qword [rbp+ rax*WORD_SIZE] ;next arg on stack
 		MAKE_PAIR(rcx,rdx, rbx)
 		
-%assign i i+1
-%endrep
+; %assign i i+1
+		inc rdi
+		jmp %%start_loop
+; %endrep
+%%finish_loop:
 
-;put the list in the first variadic cell
-inc rax
+
 mov qword [rbp+ rax*WORD_SIZE] , rcx	;put list in variadic cell
 
 pop rcx
 pop rbx
 pop rax
 %endmacro
+
+
 
 ;;; Macros and routines for printing Scheme OBjects to STDOUT
 %define CHAR_NUL 0

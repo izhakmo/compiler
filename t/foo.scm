@@ -1,3 +1,1 @@
-(
-    (lambda () (lambda (a b c d e) e))
-    'a 'b 'c 'd 'e)
+((lambda (a b c . d) a) 1 2 3 4)

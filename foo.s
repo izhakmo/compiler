@@ -22,7 +22,13 @@ MAKE_LITERAL_BOOL(0)
 
 MAKE_LITERAL_BOOL(1)
 
-MAKE_LITERAL_RATIONAL(5, 1)
+MAKE_LITERAL_RATIONAL(1, 1)
+
+MAKE_LITERAL_RATIONAL(2, 1)
+
+MAKE_LITERAL_RATIONAL(3, 1)
+
+MAKE_LITERAL_RATIONAL(4, 1)
 
 
 ;;; These macro definitions are required for the primitive
@@ -123,27 +129,47 @@ user_code_fragment:
 ;;; The code you compiled will be added here.
 ;;; It will be executed immediately after the closures for 
 ;;; the primitive procedures are set up.
+mov rax, const_tbl+57
+push rax
+mov rax, const_tbl+40
+push rax
+mov rax, const_tbl+23
+push rax
 mov rax, const_tbl+6
 push rax
-push 1
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140559342018912)
-jmp Lcont140559342018912
-Lcode140559342018912:
-mov rcx, PARAM_COUNT
-cmp rcx, 1
-je LnoVariadic140559342018912
-;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
-jmp Optcont140559342018912
-LnoVariadic140559342018912:
-SHIFT_FRAME_DOWN_BY_ONE_CELL 1
-sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell
-Optcont140559342018912:
+push 4
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140069152489760)
+jmp Lcont140069152489760
+Lcode140069152489760:
 push rbp
 mov rbp , rsp
-mov rax, qword [rbp + 40]
+mov rbx, PARAM_COUNT_OPT
+cmp rbx, 3
+je LnoVariadic140069152489760
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT
+sub rcx, 3 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 4 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT, rdx
+dec rcx
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME rsi
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)
+add rsp,rcx
+jmp Optcont140069152489760
+LnoVariadic140069152489760:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3
+sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell
+Optcont140069152489760:
+pop rbp
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
 leave
 ret
-Lcont140559342018912:
+Lcont140069152489760:
 CLOSURE_ENV rbx, rax
 push rbx
 CLOSURE_CODE rbx, rax

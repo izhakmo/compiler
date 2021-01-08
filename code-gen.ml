@@ -553,47 +553,53 @@ let allocate_mem_func arr_without_dups =
         let address = 2*(Obj.magic a) in
         (* Printf.printf "%d" address;; *)
         
-        let adjust_the_stack_for_the_optional = String.concat "" ["mov rcx, PARAM_COUNT\n";
-                                                                  "cmp rcx, "; (string_of_int (List.length vars)); "\n";
-                                                                  "je LnoVariadic"; (string_of_int address) ; "\n";
-                                                                  
-                                                                  ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
-                                                                  "mov rcx, PARAM_COUNT\n";
-                                                                  (* check this 6-3 or 6-3+1?*)
-                                                                  "sub rcx, "; (string_of_int (List.length vars)) ;" ; rcx contains the length of varicadic\n";
-                                                                  (* check this *)
-                                                                  "CREATE_VARIADIC_OPT_LIST rcx\n";
-                                                                  
+        let adjust_the_stack_for_the_optional = 
+          String.concat "" ["mov rbx, PARAM_COUNT_OPT\n";
+                            "cmp rbx, "; (string_of_int (List.length vars)); "\n";
+                            "je LnoVariadic"; (string_of_int address) ; "\n";
+                             
+                            ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
+                            "mov rcx, PARAM_COUNT_OPT\n"; (*6*)
+                            (* check this 6-3 or 6-3+1?*)
+                            "sub rcx, "; (string_of_int (List.length vars)) ;" ; rcx contains the length of varicadic\n"; (*6-3vars = 3variadic*)
+                            (* check this *)
+                            "mov rsi,rcx\n";
+                            "CREATE_VARIADIC_OPT_LIST rsi\n";
+                            
+                            "mov rdx, "; (string_of_int ((List.length vars)+1)) ;" ; rdx contains the length of vars plus 1 (vars +variadic len)\n"; (*4*)
+                            "mov PARAM_COUNT_OPT, rdx\n";
+                            
+                            "dec rcx\n"; (*2*)
+                            "mov rsi,rcx\n";
+                            "LAMBDA_OPT_SHIFT_FRAME rsi\n"; (*6-4 =2*)
 
-                                                                  "mov rdx, "; (string_of_int ((List.length vars)+1)) ;" ; rdx contains the length of vars plus 1 (vars +variadic len)\n";
-                                                                  "mov PARAM_COUNT, rdx\n";
+                            (* pop rcx times by fixing rsp*)
+                            "shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)\n";
+                            "add rsp,rcx\n";
+                            
+                            
+                            "jmp Optcont"; (string_of_int address) ; "\n";
+                            "LnoVariadic"; (string_of_int address) ; ":\n";
 
+                            "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int (List.length vars)) ;"\n";
+                            "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n";
 
-                                                                  "SHIFT_FRAME rcx\n";
+                            (* "inc rcx\n"; *)
+                            (* "mov PARAM_COUNT_OPT , rcx\n"; *)
 
-                                                                  (* need to pop rcx times *)
-
-                                                                  
-                                                                  
-                                                                  "jmp Optcont"; (string_of_int address) ; "\n";
-                                                                  "LnoVariadic"; (string_of_int address) ; ":\n";
-
-                                                                  "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int (List.length vars)) ;"\n";
-                                                                  "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n";
-                                                                  
-                                                                  (* "inc rcx\n"; *)
-                                                                  (* "mov PARAM_COUNT , rcx\n"; *)
-                                                                  
-                                                                  "Optcont"; (string_of_int address) ; ":\n";
-                                                                  ]
+                            "Optcont"; (string_of_int address) ; ":\n";
+                            ]
         in
 
         let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
                                             "Lcode"; (string_of_int address); ":\n";
+                                                
                                                 adjust_the_stack_for_the_optional ;
+                                                
+
                                                 "push rbp\n";
                                                 "mov rbp , rsp\n";
-                                                (* ";ref fuck you "; (string_of_int address) ;"\n"; *)
+                                                (* ";ref you "; (string_of_int address) ;"\n"; *)
                                                 (generate_func consts fvars body lbl_index env_num (List.length vars));
                                                 "leave\n";
                                                 "ret\n";
