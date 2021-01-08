@@ -557,7 +557,7 @@ let allocate_mem_func arr_without_dups =
           String.concat "" ["mov rbx, PARAM_COUNT_OPT\n";
                             "cmp rbx, "; (string_of_int (List.length vars)); "\n";
                             "je LnoVariadic"; (string_of_int address) ; "\n";
-                             
+(*                              
                             ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
                             "mov rcx, PARAM_COUNT_OPT\n"; (*6*)
                             (* check this 6-3 or 6-3+1?*)
@@ -576,8 +576,9 @@ let allocate_mem_func arr_without_dups =
                             (* pop rcx times by fixing rsp*)
                             "shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)\n";
                             "add rsp,rcx\n";
-                            
-                            
+                             *)
+                             ";for commit\n";
+
                             "jmp Optcont"; (string_of_int address) ; "\n";
                             "LnoVariadic"; (string_of_int address) ; ":\n";
 
