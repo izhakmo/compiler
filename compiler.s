@@ -178,6 +178,7 @@
 
 %define PARAM_COUNT qword [rbp + (3 * 8)]
 %define PARAM_COUNT_OPT qword [rbp + (2 * 8)]
+%define PARAM_COUNT_OPT_RSP qword [rsp + (2 * 8)]
 
 ;%1 = size of frame(constant)
 %macro SHIFT_FRAME 1
@@ -214,26 +215,33 @@ pop rax
 ; %endmacro
 
 ;get rsi shift gap
-%macro LAMBDA_OPT_SHIFT_FRAME 1
+%macro LAMBDA_OPT_SHIFT_FRAME_UP 1
+		
+		push rbp
+		mov rbp, rsp
+		add rbp, 8
+
 		push rax
 		push rbx
 		push rcx
 		push rdx
+
 		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
 		add rax, 2 		;4+2=6 is the place of the last cell
 		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
 		add rcx, 3 		;4+3=7 is the num of iterations
+		;add rcx, 5 		;5 more iterations because of rbp and registers rcx=12
 		
 ; %assign i 1
-		mov rbx, 1		;from 1 to 7 include
+		mov rbx, 1		;from 1 to (7 + 5) = 12 include
 		%%start_loop:
 ; %rep %1
 		cmp rbx, rcx
 		jg %%finish_loop
 
 		push qword [rbp+ rax*WORD_SIZE]
-		mov rdx, %1
-		add rdx, rax
+		mov rdx, %1						;2
+		add rdx, rax					;8
 		pop  qword [rbp+ (rdx*WORD_SIZE)]
 		dec rax
 
@@ -243,10 +251,13 @@ pop rax
 		
 ; %endrep
 %%finish_loop:
+
+
 pop rdx
 pop rcx
 pop rbx
 pop rax
+pop rbp
 %endmacro
 
 
@@ -359,6 +370,11 @@ pop rbp
 
 ;%1 = num of params to make a varidaic list
 %macro CREATE_VARIADIC_OPT_LIST 1
+		
+
+		push rbp
+		mov rbp, rsp
+		add rbp, 8
 		push rax
 		push rbx
 		push rcx
@@ -396,6 +412,7 @@ mov qword [rbp+ rax*WORD_SIZE] , rcx	;put list in variadic cell
 pop rcx
 pop rbx
 pop rax
+pop rbp
 %endmacro
 
 

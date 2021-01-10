@@ -562,14 +562,14 @@ let allocate_mem_func arr_without_dups =
         (* Printf.printf "%d" address;; *)
         
         let adjust_the_stack_for_the_optional = String.concat "" [
-            (* "mov rbx, PARAM_COUNT_OPT\n";
+                            "mov rbx, PARAM_COUNT_OPT_RSP   ;params\n";
                             "cmp rbx, "; (string_of_int (List.length vars)); "\n";
                             (* "cmp rdi, "; (string_of_int (List.length vars)); "\n"; *)
 
                             "je LnoVariadic"; (string_of_int address) ; "\n";
                              
                             ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
-                            "mov rcx, PARAM_COUNT_OPT\n"; (*6*)
+                            "mov rcx, PARAM_COUNT_OPT_RSP\n"; (*6*)
                             (* check this 6-3 or 6-3+1?*)
                             "sub rcx, "; (string_of_int (List.length vars)) ;" ; rcx contains the length of varicadic\n"; (*6-3vars = 3variadic*)
                             (* check this *)
@@ -577,20 +577,20 @@ let allocate_mem_func arr_without_dups =
                             "CREATE_VARIADIC_OPT_LIST rsi\n";
                             
                             "mov rdx, "; (string_of_int ((List.length vars)+1)) ;" ; rdx contains the length of vars plus 1 (vars +variadic len)\n"; (*4*)
-                            "mov PARAM_COUNT_OPT, rdx\n";
+                            "mov PARAM_COUNT_OPT_RSP, rdx       ;update num args\n";
                             
-                            "dec rcx\n"; (*2*)
+                            "dec rcx      ;num of cells shifts up\n"; (*2*)
                             "mov rsi,rcx\n";
-                            "LAMBDA_OPT_SHIFT_FRAME rsi\n"; (*6-4 =2*)
+                            "LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered \n"; (*6-4 =2*)
 
                             (* pop rcx times by fixing rsp*)
-                            "shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)\n";
+                            "shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)\n";
                             "add rsp,rcx\n";
                             
                              ";for commit\n";
 
                             "jmp Optcont"; (string_of_int address) ; "\n";
-                             *)
+                            
                             "LnoVariadic"; (string_of_int address) ; ":\n";
 
                             "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int ((List.length vars) + 2)) ;"\n";
