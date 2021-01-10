@@ -57,6 +57,7 @@
 %define CLOSURE_CODE CDR
 
 %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE]
+%define NUM_PARAMS qword [rbp+(3+n)*WORD_SIZE]
 
 ; returns %2 allocated bytes in register %1
 ; Supports using with %1 = %2

@@ -316,7 +316,57 @@ module Prims : PRIMS = struct
    (* rsi = cons pointer *)
    let self_set_car = make_binary "set_car" "mov qword [rsi+TYPE_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
    let self_set_cdr = make_binary "set_cdr" "mov qword [rsi+TYPE_SIZE+WORD_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
-   (* let self_apply = "apply" ;; *)
+   
+   
+   (* %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE] *)
+
+   let self_apply = "apply:
+      push rbp
+      mov rbp, rsp 
+       
+      ;num of params , place of cell of list
+      mov r1,NUM_PARAMS
+      
+      ;proc
+      mov r2,PVAR(0)
+
+      
+      ;unwrap_VARIADIC_LIST
+      mov rax, NUM_PARAMS
+      add rax, 3
+      
+      ;rdi = list
+      mov rdi, qword [rbp+ rax*WORD_SIZE]	
+      ;counter
+      mov r4,0
+      
+
+
+      start_loop_variadic:
+  
+      cmp rdi, SOB_NIL_ADDRESS
+      je finish_loop_variadic	
+                    
+      CAR r3, rdi				;mov to rbx the old pair
+      push r3
+      CDR r3, rdi
+      mov rdi, r3
+      inc r4
+      jmp start_loop_variadic
+
+      finish_loop_variadic:
+      ;swap_upside_down all the variadic params
+
+      mov r5, 0               ;; init counter of tansformation
+      mov r6, (rbp - 8)       ;; first 
+      mov r7, rsp             ;; rbp - 8 * r4 ==rbp - 8 * counter
+
+
+      start_the_transfer:
+      
+
+       pop rbp
+       ret";;
 
   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
