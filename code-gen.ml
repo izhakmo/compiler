@@ -386,7 +386,7 @@ let allocate_mem_func arr_without_dups =
                             (applics consts fvars proc args index env_num father_varlen)
                             
     | ApplicTP'(proc, args) -> 
-                            (applicTP consts fvars proc args index env_num father_varlen)
+                            (applicTP_foo consts fvars proc args index env_num father_varlen)
                             
     | _ -> raise X_generate
     
@@ -422,6 +422,10 @@ let allocate_mem_func arr_without_dups =
                                         "push rbx\n";
                                         (* "call rax→ code"; *)
                                         "CLOSURE_CODE rbx, rax\n";
+
+                                        (* check and put args num on rdi *)
+                                        (* "mov rdi, "; (string_of_int num_args); "\n"; *)
+
                                         "call rbx\n";
                                         (* " SLIDE 96"  *)
                                         "add rsp, 8*1 ; pop env\n";
@@ -444,7 +448,7 @@ let allocate_mem_func arr_without_dups =
 
         in (move_pop "" space3_plusN num_args 0) *)
 
-    and applicTP consts fvars proc args index env_num father_varlen=
+    and applicTP_foo consts fvars proc args index env_num father_varlen=
         let num_args = (List.length args) in
         let reversed_args = List.rev args in
         let push_args = push_applic_args consts fvars reversed_args "" index env_num father_varlen in
@@ -471,6 +475,10 @@ let allocate_mem_func arr_without_dups =
                                         "shl rcx , 3\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
                                         "add rsp,rcx\n";
                                         (* " SLIDE 107"  *)
+
+                                        (* check and put args num on rdi *)
+                                        (* "mov rdi, "; (string_of_int num_args); "\n"; *)
+
                                         "jmp rbx\n";
                                         ])
         in push_n
@@ -553,11 +561,13 @@ let allocate_mem_func arr_without_dups =
         let address = 2*(Obj.magic a) in
         (* Printf.printf "%d" address;; *)
         
-        let adjust_the_stack_for_the_optional = 
-          String.concat "" ["mov rbx, PARAM_COUNT_OPT\n";
+        let adjust_the_stack_for_the_optional = String.concat "" [
+            (* "mov rbx, PARAM_COUNT_OPT\n";
                             "cmp rbx, "; (string_of_int (List.length vars)); "\n";
+                            (* "cmp rdi, "; (string_of_int (List.length vars)); "\n"; *)
+
                             "je LnoVariadic"; (string_of_int address) ; "\n";
-(*                              
+                             
                             ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
                             "mov rcx, PARAM_COUNT_OPT\n"; (*6*)
                             (* check this 6-3 or 6-3+1?*)
@@ -576,14 +586,15 @@ let allocate_mem_func arr_without_dups =
                             (* pop rcx times by fixing rsp*)
                             "shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)\n";
                             "add rsp,rcx\n";
-                             *)
+                            
                              ";for commit\n";
 
                             "jmp Optcont"; (string_of_int address) ; "\n";
+                             *)
                             "LnoVariadic"; (string_of_int address) ; ":\n";
 
-                            "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int (List.length vars)) ;"\n";
-                            "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n";
+                            "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int ((List.length vars) + 2)) ;"\n";
+                            (* "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n"; *)
 
                             (* "inc rcx\n"; *)
                             (* "mov PARAM_COUNT_OPT , rcx\n"; *)
@@ -594,12 +605,16 @@ let allocate_mem_func arr_without_dups =
 
         let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
                                             "Lcode"; (string_of_int address); ":\n";
+
+                                                (* test *)
+                                                (* "push rbp\n";
+                                                "mov rbp , rsp\n"; *)
                                                 
                                                 adjust_the_stack_for_the_optional ;
-                                                
+                                                (* "pop rbp\n"; *)
 
-                                                "push rbp\n";
-                                                "mov rbp , rsp\n";
+                                                "push rbp\n"; 
+                                                "mov rbp , rsp\n"; 
                                                 (* ";ref you "; (string_of_int address) ;"\n"; *)
                                                 (generate_func consts fvars body lbl_index env_num (List.length vars));
                                                 "leave\n";

@@ -252,19 +252,62 @@ pop rax
 
 
 
+; ;%1 = size of frame(constant)
+; %macro SHIFT_FRAME_DOWN_BY_ONE_CELL 1
+; 		;this macro creates extra space for variadic when the variadic is empty list
+; 		push rbp
+
+; 		mov rbp, rsp
+; 		; add rbp, 8
+
+; 		; push rax
+; 		; push rcx
+; 		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+; 		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+; 		add rax, 2 				;rax = n+2 , 8 we have n+3 cells
+		
+; %assign i 0
+; %rep %1
+; 		; mov rbx, [rbp + (i*WORD_SIZE)]
+; 		; mov qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ], rbx
+; 		push qword [rbp + (i*WORD_SIZE)]
+; 		pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
+; %assign i i+1
+; %endrep
+; ;adding of nil to the new cell variadic
+; shl rax, 3
+; ;MAKE_PAIR(rdx,SOB_NIL_ADDRESS, SOB_NIL_ADDRESS)
+; mov qword [rbp + rax], SOB_NIL_ADDRESS
+; inc rcx
+; mov qword [rbp + (2 * 8)] ,rcx		;change n to be  (n+1) ==> args = n+1
+; ; pop rcx
+; ; pop rax
+; pop rbp
+; %endmacro
+
+
 ;%1 = size of frame(constant)
 %macro SHIFT_FRAME_DOWN_BY_ONE_CELL 1
 		;this macro creates extra space for variadic when the variadic is empty list
-		push rax
-		push rcx
+		
+		push rbp
+		push rbp
+
+		mov rbp, rsp
+		add rbp, 16
+
+		; push rax
+		; push rcx
 		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
 		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
-		add rax, 2 				;rax = n+2 , we have n+3 cells
+		add rax, 2 				;rax = n+2 , 8 we have n+3 cells
 		
 %assign i 0
 %rep %1
-		push qword [rbp + (i*WORD_SIZE)]
-		pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
+		mov rdi, [rbp + (i*WORD_SIZE)]
+		mov qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ], rdi
+		; push qword [rbp + (i*WORD_SIZE)]
+		; pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
 %assign i i+1
 %endrep
 ;adding of nil to the new cell variadic
@@ -272,10 +315,13 @@ shl rax, 3
 ;MAKE_PAIR(rdx,SOB_NIL_ADDRESS, SOB_NIL_ADDRESS)
 mov qword [rbp + rax], SOB_NIL_ADDRESS
 inc rcx
-mov qword [rbp + (2 * 8)] ,rcx
-pop rcx
-pop rax
+mov qword [rbp + (1 * 8)] ,rcx		;change n to be  (n+1) ==> args = n+1
+; pop rcx
+; pop rax
+pop rbp
+
 %endmacro
+
 
 
 ; ;%1 = num of params to make a varidaic list
