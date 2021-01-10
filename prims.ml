@@ -325,20 +325,17 @@ module Prims : PRIMS = struct
       mov rbp, rsp 
        
       ;num of params , place of cell of list
-      mov r1,NUM_PARAMS
+      mov r10,NUM_PARAMS     ;;including proc and params and variadic list cell
       
-      ;proc
-      mov r2,PVAR(0)
-
       
       ;unwrap_VARIADIC_LIST
       mov rax, NUM_PARAMS
-      add rax, 3
+      add rax, 3                ;;the place of variadic list
       
       ;rdi = list
       mov rdi, qword [rbp+ rax*WORD_SIZE]	
       ;counter
-      mov r4,0
+      mov r4,0                  ;;counter of the list size
       
 
 
@@ -347,7 +344,7 @@ module Prims : PRIMS = struct
       cmp rdi, SOB_NIL_ADDRESS
       je finish_loop_variadic	
                     
-      CAR r3, rdi				;mov to rbx the old pair
+      CAR r3, rdi				      ;mov to rbx the old pair
       push r3
       CDR r3, rdi
       mov rdi, r3
@@ -355,21 +352,81 @@ module Prims : PRIMS = struct
       jmp start_loop_variadic
 
       finish_loop_variadic:
-      ;swap_upside_down all the variadic params
 
-      mov r5, 0               ;; init counter of tansformation
-      mov r6, (rbp - 8)       ;; first 
-      mov r7, rsp             ;; rbp - 8 * r4 ==rbp - 8 * counter
+      ;swap_upside_down all the variadic params
+      mov r5, 1               ;; init counter of tansformation
+      mov r6, rbp             ;; first 
+      sub r6, WORD_SIZE
+      mov r7, rsp             ;; last  = rsp == rbp - 8 * r4 == rbp - 8 * counter
+      
 
 
       start_the_transfer:
+      mov r8, [r6]
+      mov r9, [r7]
+      mov [r6], r9
+      mov [r7], r8
+      add r5, 2               ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
+      sub r6, WORD_SIZE
+      add r7, WORD_SIZE
+      
+      cmp r5, r10
+      jg finish_the_transfer
+      jmp start_the_transfer
+      
+      finish_the_transfer:
+      
+      ;;push params without proc
+      mov r10, NUM_PARAMS         ;;while r10 > 2 == while we didn't push all non list params without proc
+      mov r5, NUM_PARAMS
+      add r5, 2                   ;;first non list arg
+      shl r5, 3
+      mov r6, rbp                 ;; r6 = pointer to cell of first non list arg
+      add r6, r5
       
 
-       pop rbp
-       ret";;
+      label_loop_push_params:
+      cmp r10, 2                 ;;while r10 > 2 == while we didn't push all non list params without proc
+      je finish_loop_push_params
+      push qword [r6]
+      sub r6, WORD_SIZE
+      dec r10
+      jmp label_loop_push_params
+      finish_loop_push_params:
+      
+      push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
+      add r4, NUM_PARAMS
+      sub r4, 2               ;;sub from r4 the proc and list cells.
+      push r4                 ;push qword [rbp+ 3*WORD_SIZE]
+
+          ;push qword [rbp+ 2*WORD_SIZE]   ;env
+          ;push qword [rbp+ 1*WORD_SIZE]   ;old-ret
+          ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+      
+
+      shifting_like_applic_tp:
+      mov rax, qword [rbp+ 4*WORD_SIZE]       ;proc
+      CLOSURE_ENV rbx, rax
+      push rbx
+      push qword [rbp + 8 * 1] ; old ret addr
+
+      ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+
+      CLOSURE_CODE rbx, rax
+      mov rcx,0
+      mov rcx, PARAM_COUNT
+      add rcx, 4
+      SHIFT_FRAME_REGISTER r4
+      shl rcx , 3
+      add rsp,rcx
+      jmp rbx
+          
+      
+          ;pop rbp
+          ;ret";;
 
   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
      string of primitive procedures. *)
-  let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops ; self_cons ;self_car ;self_cdr; self_set_car; self_set_cdr];;
+  let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops ; self_cons ;self_car ;self_cdr; self_set_car; self_set_cdr; self_apply];;
 end;;

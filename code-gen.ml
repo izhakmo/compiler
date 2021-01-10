@@ -288,7 +288,7 @@ let allocate_mem_func arr_without_dups =
         (* Additional rational numebr ops *)
         "numerator", "numerator"; "denominator", "denominator"; "gcd", "gcd";
         (* you can add yours here *)
-        (* "apply", "apply"; *)
+        "apply", "apply";
          "car", "car";
          "cdr", "cdr"; 
          "cons", "cons";

@@ -198,6 +198,41 @@
 pop rax
 %endmacro
 
+
+;%1 = size of frame(constant)
+%macro SHIFT_FRAME_REGISTER 1
+		push rax
+		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
+		add rax, 4 				;(not TODO) 4 cells if not magic , 5 if use of magic
+		
+		
+; %assign i 1
+		mov rbx, 1		;from 1 to (7 + 5) = 12 include
+		%%start_loop:
+; %rep %1
+		cmp rbx, %1
+		jg %%finish_loop
+
+		dec rax
+		mov rdx, rbp
+		mov rsi, rbx
+		shl rsi, 3
+		sub rdx, rsi
+		push qword [rdx]
+		pop  qword [rbp+ rax*WORD_SIZE]
+
+
+; %assign i i+1
+		inc rbx
+		jmp %%start_loop
+		
+; %endrep
+%%finish_loop:
+
+
+pop rax
+%endmacro
+
 ;%1 = size of frame(constant)
 ; %macro LAMBDA_OPT_SHIFT_FRAME 1
 ; 		push rax
