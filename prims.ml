@@ -344,7 +344,7 @@ module Prims : PRIMS = struct
       cmp rdi, SOB_NIL_ADDRESS
       je finish_loop_variadic	
                     
-      CAR r8, rdi				      ;mov to rbx the old pair
+      CAR r8, rdi				      ;mov to r8 the CAR of list
       push r8
       CDR r8, rdi
       mov rdi, r8
@@ -362,15 +362,15 @@ module Prims : PRIMS = struct
 
 
       start_the_transfer:
-      mov r13, [r11]
-      mov r14, [r12]
-      mov [r11], r14
-      mov [r12], r13
-      add r10, 2               ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
+      mov r13, qword [r11]
+      mov r14, qword [r12]
+      mov qword [r11], r14
+      mov qword [r12], r13
+      add r10, 2              ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
       sub r11, WORD_SIZE
       add r12, WORD_SIZE
       
-      cmp r10, r15
+      cmp r10, r9
       jg finish_the_transfer
       jmp start_the_transfer
       
@@ -397,7 +397,7 @@ module Prims : PRIMS = struct
       push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
       add r9, PARAM_COUNT
       sub r9, 2               ;;sub from r4 the proc and list cells.
-      push r9                 ;push qword [rbp+ 3*WORD_SIZE]
+      push r9                 ;push n args     push qword [rbp+ 3*WORD_SIZE]
 
           ;push qword [rbp+ 2*WORD_SIZE]   ;env
           ;push qword [rbp+ 1*WORD_SIZE]   ;old-ret
@@ -416,6 +416,7 @@ module Prims : PRIMS = struct
       mov rcx,0
       mov rcx, PARAM_COUNT
       add rcx, 4
+      add r9,4
       SHIFT_FRAME_REGISTER r9
       shl rcx , 3
       add rsp,rcx

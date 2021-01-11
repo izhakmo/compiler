@@ -183,7 +183,7 @@ let allocate_mem_func arr_without_dups =
   | Sexpr(Nil) ->         (allocate_mem arr (res@[(Sexpr(Nil), (index, "MAKE_CONST_NIL\n"))]) (index + 1))
   | Sexpr(Bool false) ->  (allocate_mem arr (res@[(Sexpr(Bool false), (index, "MAKE_LITERAL_BOOL(0)\n"))]) (index + 2))
   | Sexpr(Bool true) ->   (allocate_mem arr (res@[(Sexpr(Bool true), (index, "MAKE_LITERAL_BOOL(1)\n"))]) (index + 2))
-  | Sexpr(Char(c1))->     (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_CHAR(";Char.escaped c1;")\n"])))]) (index + 2))
+  | Sexpr(Char(c1))->     (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_CHAR(";string_of_int ((int_of_char c1));")\n"])))]) (index + 2))
   | Sexpr(Number(Float f1)) ->
                           (allocate_mem arr (res@[(hd, (index,( String.concat "" ["MAKE_LITERAL_FLOAT(";(string_of_float f1);")\n"])))]) (index + 9))
   | Sexpr(Number(Fraction (n1, d1))) ->
@@ -349,14 +349,17 @@ let allocate_mem_func arr_without_dups =
                                               "mov rax, SOB_VOID_ADDRESS\n"]
    
     | If'(t1, th1, el1)->   let updated_index = (index + 1) in
+                            let a = (ref updated_index) in
+                            let address = 2*(Obj.magic a) in
+
                             String.concat "" [generate_func consts fvars t1 updated_index env_num father_varlen;
                                               "cmp rax, SOB_FALSE_ADDRESS\n";
-                                              "je Lelse";  (string_of_int updated_index); "\n";
+                                              "je Lelse";  (string_of_int address); "\n";
                                               generate_func consts fvars th1 updated_index env_num father_varlen;
-                                              "jmp Lexit";(string_of_int updated_index);"\n";
-                                              "Lelse"; (string_of_int updated_index); ":\n";
+                                              "jmp Lexit";(string_of_int address);"\n";
+                                              "Lelse"; (string_of_int address); ":\n";
                                               generate_func consts fvars el1 updated_index env_num father_varlen;
-                                              "Lexit"; (string_of_int updated_index); ":\n";]
+                                              "Lexit"; (string_of_int address); ":\n";]
 
 
     | Seq'(e_lst) ->        (generate_seq consts fvars e_lst "" index env_num father_varlen)
