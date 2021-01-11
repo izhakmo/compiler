@@ -4,7 +4,6 @@
    The module works by defining a hierarchy of templates, which call each other
    to form complete routines. See the inline comments below for more information
    on the templates and the individual routines.
-
    Note that the implementation below contain no error handling or correctness-checking
    of any kind. This is because we will not test your compilers on invalid input.
    However, adding correctness-checking and error handling *as general templates* would be
@@ -56,6 +55,7 @@ module Prims : PRIMS = struct
      The argument register assignment follows the x86 64bit Unix ABI, because there needs to be *some*
      kind of consistency, so why not just use the standard ABI.
      See page 22 in https://raw.githubusercontent.com/wiki/hjl-tools/x86-psABI/x86-64-psABI-1.0.pdf
+     *** FIXME: There's a typo here: PVAR(0) should be rdi, PVAR(1) should be rsi, according to the ABI     
    *)
   let make_unary label body = make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);;
   let make_binary label body = make_unary label ("mov rdi, PVAR(1)\n\t" ^ body);;
@@ -84,6 +84,30 @@ module Prims : PRIMS = struct
         (return_boolean_eq ("mov sil, byte [rsi]\n\tcmp sil, " ^ type_tag)) in
     String.concat "\n\n" (List.map (fun (a, b) -> single_query a b) queries_to_types);;
 
+  (* The rational number artihmetic operators have to normalize the fractions they return,
+     so a GCD implementation is needed. Now there are two options: 
+     1) implement only a scheme-procedure-like GCD, and allocate rational number scheme objects for the 
+        intermediate numerator and denominator values of the fraction to be returned, call GCD, decompose
+        the returned fraction, perform the divisions, and allocate the final fraction to return
+     2) implement 2 GCDs: a low-level gcd that only implements the basic GCD loop, which is used by the rational 
+        number arithmetic operations; and a scheme-procedure-like GCD to be wrapped by the stdlib GCD implementation.
+    
+     The second option is more efficient, and doesn't cost much, in terms of executable file bloat: there are only 4
+     routines that inline the primitive gcd_loop: add, mul, div, and gcd.
+     Note that div the inline_gcd embedded in div is dead code (the instructions are never executed), so a more optimized
+     version of prims.ml could cut the duplication down to only 3 places (add, mul, gcd).
+   *)
+  let inline_gcd =
+    ".gcd_loop:
+     and rdi, rdi
+     jz .end_gcd_loop
+     cqo
+     idiv rdi
+     mov rax, rdi
+     mov rdi, rdx
+     jmp .gcd_loop	
+     .end_gcd_loop:";;
+
   (* The arithmetic operation implementation is multi-tiered:
      - The low-level implementations of all operations are binary, e.g. (+ 1 2 3) and (+ 1) are not 
        supported in the low-level implementation.
@@ -104,7 +128,6 @@ module Prims : PRIMS = struct
      on the heap with the result, and store the address of the sob_float in rax as the return value.
      This allows us to easily abstract this code into a template that requires a label name and its matching
      arithmetic instruction (which are paired up in the op_map).
-
      Operations on fractional operands:
      ----------------------------------
      The addition and multiplication operations on rational numbers are similar to each other: both load 2 arguments,
@@ -117,7 +140,6 @@ module Prims : PRIMS = struct
      Unlike in the case of floating point arithmetic, rational division is treated differently, and is implemented by
      using the identity (a/b) / (c/d) == (a/b) * (d/c).
      This is done by inverting the second arg (in PVAR(1)) and tail-calling fraction multiplication (`jmp mul`).
-
      Comparators:
      ------------
      While the implementation of the Comparators is slightly more complex, since they make use of `return_boolean`,
@@ -128,7 +150,8 @@ module Prims : PRIMS = struct
        and not 64 bits.
      - `lt.flt` does not handle NaN, +inf and -inf correctly. This allows us to use `return_boolean jl` for both the
        floating-point and the fraction cases. For a fully correct implementation, `lt.flt` should make use of
-       the `ucomisd` opcode and `return_boolean jb` instead (see https://www.felixcloutier.com/x86/ucomisd for more information).
+       the `ucomisd` opcode and `return_boolean jb` instead (see https://www.felixcloutier.com/x86/ucomisd for
+       more information).
    *)
   let numeric_ops =
     let numeric_op name flt_body rat_body body_wrapper =      
@@ -170,6 +193,23 @@ module Prims : PRIMS = struct
 	  NUMERATOR rsi, rsi
 	  NUMERATOR rdi, rdi
           " ^ rat_op ^ "
+	  mov rax, rcx
+	  mov rdi, rsi
+          " ^ inline_gcd ^ "
+	  mov rdi, rax
+	  mov rax, rsi
+	  cqo
+	  idiv rdi
+	  mov rsi, rax
+	  mov rax, rcx
+	  cqo
+	  idiv rdi
+	  mov rcx, rax
+          cmp rcx, 0
+          jge .make_rat
+          imul rsi, -1
+          imul rcx, -1
+          .make_rat:
           MAKE_RATIONAL(rax, rsi, rcx)") in
     let comp_map = [
         (* = *)
@@ -200,8 +240,8 @@ module Prims : PRIMS = struct
 	 FLOAT_VAL rdi, rdi
 	 movq xmm1, rdi
 	 cmpltpd xmm0, xmm1
-	 movq rsi, xmm0
-	 cmp rsi, 0", "lt";
+         movq rsi, xmm0
+         cmp rsi, 0", "lt";
       ] in
     let comparator comp_wrapper name flt_body rat_body = numeric_op name flt_body rat_body comp_wrapper in
     (String.concat "\n\n" (List.map (fun (a, b, c) -> arith c b a (fun x -> x)) arith_map)) ^
@@ -296,15 +336,7 @@ module Prims : PRIMS = struct
         "xor rdx, rdx
 	 NUMERATOR rax, rsi
          NUMERATOR rdi, rdi
-       .loop:
-	 and rdi, rdi
-	 jz .end_loop
-	 xor rdx, rdx 
-	 div rdi
-	 mov rax, rdi
-	 mov rdi, rdx
-	 jmp .loop	
-       .end_loop:
+         " ^ inline_gcd ^ "
 	 mov rdx, rax
          MAKE_RATIONAL(rax, rdx, 1)", make_binary, "gcd";  
       ] in
@@ -314,6 +346,7 @@ module Prims : PRIMS = struct
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
      string of primitive procedures. *)
 
+     
     (* make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);; *)
     let self_cons = make_binary "cons" "MAKE_PAIR(rax, rsi, rdi)" ;;
     let self_car = make_unary "car" "CAR rax,rsi";;
@@ -326,9 +359,12 @@ module Prims : PRIMS = struct
     (* %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE] *)
  
     let self_apply = "apply:
+       
+       mov rsi, qword [rbp]
+
        push rbp
        mov rbp, rsp 
-        
+      
        ;num of params , place of cell of list
        mov r15,PARAM_COUNT     ;;including proc and params and variadic list cell
        
@@ -425,6 +461,8 @@ module Prims : PRIMS = struct
        SHIFT_FRAME_REGISTER r9
        shl rcx , 3
        add rsp,rcx
+       
+       mov rbp, rsi
        jmp rbx
            
        

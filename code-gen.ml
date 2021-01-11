@@ -363,7 +363,10 @@ let allocate_mem_func arr_without_dups =
 
 
     | Seq'(e_lst) ->        (generate_seq consts fvars e_lst "" index env_num father_varlen)
-    | Or'(or_lst) ->        (generate_or consts fvars or_lst "" (index + 1) env_num father_varlen)
+    | Or'(or_lst) ->
+                            let a = (ref index) in
+                            let address = 2*(Obj.magic a) in
+                            (generate_or consts fvars or_lst "" (index + 1) env_num father_varlen address)
     | Set'(VarParam(var_name,minor), c) -> 
                             String.concat "" [(generate_func consts fvars c index env_num father_varlen); "\n";
                             "mov qword [rbp + ";(string_of_int (8 * (4 + minor))); "],rax\n";
@@ -403,11 +406,20 @@ let allocate_mem_func arr_without_dups =
     | _ ->  generate_seq consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index env_num father_varlen]) index env_num father_varlen
 
 
-    and generate_or consts fvars e_lst res index env_num father_varlen= match e_lst with
-    | [] -> (String.concat "" [res;"Lexit";(string_of_int index); ":\n" ])
-    | _ ->  generate_or consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index env_num father_varlen;
+    and generate_or consts fvars e_lst res index env_num father_varlen address =
+    (* let a = (ref index) in
+    let address = 2*(Obj.magic a) in *)
+    match e_lst with
+    | [] ->
+                            (* let a = (ref index) in
+                            let address = 2*(Obj.magic a) in *)
+                            (String.concat "" [res;"Lexitor";(string_of_int address); ":\n" ])
+    | _ ->
+                            (* let a = (ref index) in
+                            let address = 2*(Obj.magic a) in *)
+                            generate_or consts fvars (List.tl e_lst) (String.concat "" [res; generate_func consts fvars (List.hd e_lst) index env_num father_varlen;
                                                                          "cmp rax, SOB_FALSE_ADDRESS\n";
-                                                                         "jne Lexit";(string_of_int index); "\n"]) index env_num father_varlen
+                                                                         "jne Lexitor";(string_of_int address); "\n"]) index env_num father_varlen address
 
     and push_applic_args consts fvars app_lst res index env_num father_varlen= match app_lst with
     | [] -> res
@@ -418,6 +430,7 @@ let allocate_mem_func arr_without_dups =
         let num_args = (List.length args) in
         let reversed_args = List.rev args in
         let push_args = push_applic_args consts fvars reversed_args "" index env_num father_varlen in
+
         let push_n = (String.concat "" [push_args; "push "; (string_of_int num_args); "\n" ;
                                         (generate_func consts fvars proc index env_num father_varlen);
                                         (* "push rax→ env"; *)
@@ -465,11 +478,12 @@ let allocate_mem_func arr_without_dups =
                                         (* "jmp rax→ code"; *)
                                         "CLOSURE_CODE rbx, rax\n      ;move_and_pop_stack_frame_TP\n";
                                         (* fix the stack *)
-                                        
+                                        "mov r8, qword [rbp]\n ";
+
                                         "mov rcx,0\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
                                         "mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame\n";
                                         "add rcx, 4\n  ;(not TODO) 4 cells if not magic , 5 if use of magic\n";
-
+                                        
                                         "SHIFT_FRAME " ; (string_of_int (4+num_args)) ;"\n";
 
                                         (* "mov ecx, " ; (string_of_int (4+num_args)) ;"\n";
@@ -481,7 +495,7 @@ let allocate_mem_func arr_without_dups =
 
                                         (* check and put args num on rdi *)
                                         (* "mov rdi, "; (string_of_int num_args); "\n"; *)
-
+                                        "mov rbp, r8\n ";
                                         "jmp rbx\n";
                                         ])
         in push_n
@@ -566,10 +580,10 @@ let allocate_mem_func arr_without_dups =
         
         let adjust_the_stack_for_the_optional = String.concat "" [
                             "mov rbx, PARAM_COUNT_OPT_RSP   ;params\n";
-                            "cmp rbx, "; (string_of_int (List.length vars)); "\n";
+                            "cmp rbx, "; (string_of_int ((List.length vars)+1)); "\n";
                             (* "cmp rdi, "; (string_of_int (List.length vars)); "\n"; *)
 
-                            "je LnoVariadic"; (string_of_int address) ; "\n";
+                            "jl LnoVariadic"; (string_of_int address) ; "\n";
                              
                             ";OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params\n";
                             "mov rcx, PARAM_COUNT_OPT_RSP\n"; (*6*)
@@ -595,8 +609,9 @@ let allocate_mem_func arr_without_dups =
                             "jmp Optcont"; (string_of_int address) ; "\n";
                             
                             "LnoVariadic"; (string_of_int address) ; ":\n";
-
-                            "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int ((List.length vars) + 2)) ;"\n";
+                            (* "mov r9, "; (string_of_int ((List.length vars) + 2))  ;"\n"; *)
+                            (* "SHIFT_FRAME_DOWN_BY_ONE_CELL r9  ; go 0 to n times include.. so n+1 times\n"; *)
+                            "SHIFT_FRAME_DOWN_BY_ONE_CELL "; (string_of_int ((List.length vars) + 3)) ;"      ; vars+3 times\n";
                             (* "sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell\n"; *)
 
                             (* "inc rcx\n"; *)

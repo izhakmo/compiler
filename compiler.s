@@ -339,20 +339,25 @@ pop rbp
 		
 		push rbp
 		push rbp
+		push rax
+		push rcx
+		push rdi
 
 		mov rbp, rsp
-		add rbp, 16
+		add rbp, 5 * WORD_SIZE
 
 		; push rax
 		; push rcx
-		mov rax, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
-		mov rcx, PARAM_COUNT_OPT ;PARAM_COUNT of father frame
+		mov rax, qword [rbp + (2*WORD_SIZE)] ;PARAM_COUNT of father frame
+		mov rcx, qword [rbp + (2*WORD_SIZE)]  ;PARAM_COUNT of father frame
 		add rax, 2 				;rax = n+2 , 8 we have n+3 cells
+		; add rax, 1 				;rax = n+2 , 8 we have n+3 cells
 		
+;%1 is the times we loop. 
 %assign i 0
-%rep %1
-		mov rdi, [rbp + (i*WORD_SIZE)]
-		mov qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ], rdi
+%rep %1														
+		mov rdi, qword [rbp + (i*WORD_SIZE)]
+		mov qword [rbp + ((i*WORD_SIZE) - WORD_SIZE ) ], rdi
 		; push qword [rbp + (i*WORD_SIZE)]
 		; pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
 %assign i i+1
@@ -361,13 +366,67 @@ pop rbp
 shl rax, 3
 ;MAKE_PAIR(rdx,SOB_NIL_ADDRESS, SOB_NIL_ADDRESS)
 mov qword [rbp + rax], SOB_NIL_ADDRESS
+
 inc rcx
 mov qword [rbp + (1 * 8)] ,rcx		;change n to be  (n+1) ==> args = n+1
-; pop rcx
-; pop rax
+pop rdi
+pop rcx
+pop rax
 pop rbp
 
 %endmacro
+
+
+
+
+
+
+; %macro SHIFT_FRAME_DOWN_BY_ONE_CELL 1
+; 		;this macro creates extra space for variadic when the variadic is empty list
+		
+		
+		
+; ; %assign i 1
+; 		mov rdx, 0		;from 1 to (7 + 5) = 12 include
+; 		%%start_loop:
+; ; %rep %1
+; 		cmp rdx, %1
+; 		jg %%finish_loop
+		
+; 		mov rdi, [rsp + rdx*WORD_SIZE]
+; 		mov qword [rsp + rdx*WORD_SIZE - WORD_SIZE ], rdi
+; 		; push qword [rbp + (i*WORD_SIZE)]
+; 		; pop qword [rbp + ((i*WORD_SIZE) - WORD_SIZE) ]
+
+; ; %assign i i+1
+; 		inc rdx
+; 		jmp %%start_loop
+		
+; ; %endrep
+; %%finish_loop:
+
+; sub rsp, WORD_SIZE
+; mov rdi, PARAM_COUNT_OPT_RSP ;PARAM_COUNT of father frame
+; mov rsi, PARAM_COUNT_OPT_RSP ;PARAM_COUNT of father frame
+; add rsi, 3				;rax = n+2 , 8 we have n+3 cells
+
+
+
+
+; ;MAKE_PAIR(rdx,SOB_NIL_ADDRESS, SOB_NIL_ADDRESS)
+; mov r8, SOB_NIL_ADDRESS
+; mov qword [rsp + rsi], r8
+
+; inc rdi
+; mov qword [rsp + (2 * 8)] ,rdi		;change n to be  (n+1) ==> args = n+1
+
+
+; %endmacro
+
+
+
+
+
 
 
 
