@@ -10,7 +10,7 @@
    However, adding correctness-checking and error handling *as general templates* would be
    rather simple.
  *)
-module type PRIMS = sig
+ module type PRIMS = sig
   val procs : string;;
 end
 
@@ -128,7 +128,7 @@ module Prims : PRIMS = struct
        and not 64 bits.
      - `lt.flt` does not handle NaN, +inf and -inf correctly. This allows us to use `return_boolean jl` for both the
        floating-point and the fraction cases. For a fully correct implementation, `lt.flt` should make use of
-       `return_boolean jb` instead (see https://www.felixcloutier.com/x86/ucomisd for more information).
+       the `ucomisd` opcode and `return_boolean jb` instead (see https://www.felixcloutier.com/x86/ucomisd for more information).
    *)
   let numeric_ops =
     let numeric_op name flt_body rat_body body_wrapper =      
@@ -199,7 +199,9 @@ module Prims : PRIMS = struct
 	 movq xmm0, rsi
 	 FLOAT_VAL rdi, rdi
 	 movq xmm1, rdi
-	 ucomisd xmm0, xmm1", "lt";
+	 cmpltpd xmm0, xmm1
+	 movq rsi, xmm0
+	 cmp rsi, 0", "lt";
       ] in
     let comparator comp_wrapper name flt_body rat_body = numeric_op name flt_body rat_body comp_wrapper in
     (String.concat "\n\n" (List.map (fun (a, b, c) -> arith c b a (fun x -> x)) arith_map)) ^
@@ -308,126 +310,130 @@ module Prims : PRIMS = struct
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
 
-
-    (* make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);; *)
-   let self_cons = make_binary "cons" "MAKE_PAIR(rax, rsi, rdi)" ;;
-   let self_car = make_unary "car" "CAR rax,rsi";;
-   let self_cdr = make_unary "cdr" "CDR rax,rsi";;
-   (* rsi = cons pointer *)
-   let self_set_car = make_binary "set_car" "mov qword [rsi+TYPE_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
-   let self_set_cdr = make_binary "set_cdr" "mov qword [rsi+TYPE_SIZE+WORD_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
-   
-   
-   (* %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE] *)
-
-   let self_apply = "apply:
-      push rbp
-      mov rbp, rsp 
-       
-      ;num of params , place of cell of list
-      mov r15,PARAM_COUNT     ;;including proc and params and variadic list cell
-      
-      
-      ;unwrap_VARIADIC_LIST
-      mov rax, PARAM_COUNT
-      add rax, 3                ;;the place of variadic list
-      
-      ;rdi = list
-      mov rdi, qword [rbp+ rax*WORD_SIZE]	
-      ;counter
-      mov r9,0                  ;;counter of the list size
-      
-
-
-      start_loop_variadic:
-  
-      cmp rdi, SOB_NIL_ADDRESS
-      je finish_loop_variadic	
-                    
-      CAR r8, rdi				      ;mov to r8 the CAR of list
-      push r8
-      CDR r8, rdi
-      mov rdi, r8
-      inc r9
-      jmp start_loop_variadic
-
-      finish_loop_variadic:
-
-      ;swap_upside_down all the variadic params
-      mov r10, 1               ;; init counter of tansformation
-      mov r11, rbp             ;; first 
-      sub r11, WORD_SIZE
-      mov r12, rsp             ;; last  = rsp == rbp - 8 * r4 == rbp - 8 * counter
-      
-
-
-      start_the_transfer:
-      mov r13, qword [r11]
-      mov r14, qword [r12]
-      mov qword [r11], r14
-      mov qword [r12], r13
-      add r10, 2              ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
-      sub r11, WORD_SIZE
-      add r12, WORD_SIZE
-      
-      cmp r10, r9
-      jg finish_the_transfer
-      jmp start_the_transfer
-      
-      finish_the_transfer:
-      
-      ;;push params without proc
-      mov r15, PARAM_COUNT         ;;while r10 > 2 == while we didn't push all non list params without proc
-      mov r10, PARAM_COUNT
-      add r10, 2                   ;;first non list arg
-      shl r10, 3
-      mov r11, rbp                 ;; r6 = pointer to cell of first non list arg
-      add r11, r10
-      
-
-      label_loop_push_params:
-      cmp r15, 2                 ;;while r10 > 2 == while we didn't push all non list params without proc
-      je finish_loop_push_params
-      push qword [r11]
-      sub r11, WORD_SIZE
-      dec r15
-      jmp label_loop_push_params
-      finish_loop_push_params:
-      
-      push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
-      add r9, PARAM_COUNT
-      sub r9, 2               ;;sub from r4 the proc and list cells.
-      push r9                 ;push n args     push qword [rbp+ 3*WORD_SIZE]
-
-          ;push qword [rbp+ 2*WORD_SIZE]   ;env
-          ;push qword [rbp+ 1*WORD_SIZE]   ;old-ret
-          ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
-      
-
-      shifting_like_applic_tp:
-      mov rax, qword [rbp+ 4*WORD_SIZE]       ;proc
-      CLOSURE_ENV rbx, rax
-      push rbx
-      push qword [rbp + 8 * 1] ; old ret addr
-
-      ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
-
-      CLOSURE_CODE rbx, rax
-      mov rcx,0
-      mov rcx, PARAM_COUNT
-      add rcx, 4
-      add r9,4
-      SHIFT_FRAME_REGISTER r9
-      shl rcx , 3
-      add rsp,rcx
-      jmp rbx
-          
-      
-          ;pop rbp
-          ;ret";;
-
   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
      string of primitive procedures. *)
-  let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops ; self_cons ;self_car ;self_cdr; self_set_car; self_set_cdr; self_apply];;
-end;;
+
+    (* make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);; *)
+    let self_cons = make_binary "cons" "MAKE_PAIR(rax, rsi, rdi)" ;;
+    let self_car = make_unary "car" "CAR rax,rsi";;
+    let self_cdr = make_unary "cdr" "CDR rax,rsi";;
+    (* rsi = cons pointer *)
+    let self_set_car = make_binary "set_car" "mov qword [rsi+TYPE_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
+    let self_set_cdr = make_binary "set_cdr" "mov qword [rsi+TYPE_SIZE+WORD_SIZE], rdi\n\t mov rax, SOB_VOID_ADDRESS\n";;
+    
+    
+    (* %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE] *)
+ 
+    let self_apply = "apply:
+       push rbp
+       mov rbp, rsp 
+        
+       ;num of params , place of cell of list
+       mov r15,PARAM_COUNT     ;;including proc and params and variadic list cell
+       
+       
+       ;unwrap_VARIADIC_LIST
+       mov rax, PARAM_COUNT
+       add rax, 3                ;;the place of variadic list
+       
+       ;rdi = list
+       mov rdi, qword [rbp+ rax*WORD_SIZE]	
+       ;counter
+       mov r9,0                  ;;counter of the list size
+       
+ 
+ 
+       start_loop_variadic:
+   
+       cmp rdi, SOB_NIL_ADDRESS
+       je finish_loop_variadic	
+                     
+       CAR r8, rdi				      ;mov to r8 the CAR of list
+       push r8
+       CDR r8, rdi
+       mov rdi, r8
+       inc r9
+       jmp start_loop_variadic
+ 
+       finish_loop_variadic:
+ 
+       ;swap_upside_down all the variadic params
+       mov r10, 1               ;; init counter of tansformation
+       mov r11, rbp             ;; first 
+       sub r11, WORD_SIZE
+       mov r12, rsp             ;; last  = rsp == rbp - 8 * r4 == rbp - 8 * counter
+       
+ 
+ 
+       start_the_transfer:
+       mov r13, qword [r11]
+       mov r14, qword [r12]
+       mov qword [r11], r14
+       mov qword [r12], r13
+       add r10, 2              ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
+       sub r11, WORD_SIZE
+       add r12, WORD_SIZE
+       
+       cmp r10, r9
+       jg finish_the_transfer
+       jmp start_the_transfer
+       
+       finish_the_transfer:
+       
+       ;;push params without proc
+       mov r15, PARAM_COUNT         ;;while r10 > 2 == while we didn't push all non list params without proc
+       mov r10, PARAM_COUNT
+       add r10, 2                   ;;first non list arg
+       shl r10, 3
+       mov r11, rbp                 ;; r6 = pointer to cell of first non list arg
+       add r11, r10
+       
+ 
+       label_loop_push_params:
+       cmp r15, 2                 ;;while r10 > 2 == while we didn't push all non list params without proc
+       je finish_loop_push_params
+       push qword [r11]
+       sub r11, WORD_SIZE
+       dec r15
+       jmp label_loop_push_params
+       finish_loop_push_params:
+       
+       push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
+       add r9, PARAM_COUNT
+       sub r9, 2               ;;sub from r4 the proc and list cells.
+       push r9                 ;push n args     push qword [rbp+ 3*WORD_SIZE]
+ 
+           ;push qword [rbp+ 2*WORD_SIZE]   ;env
+           ;push qword [rbp+ 1*WORD_SIZE]   ;old-ret
+           ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+       
+ 
+       shifting_like_applic_tp:
+       mov rax, qword [rbp+ 4*WORD_SIZE]       ;proc
+       CLOSURE_ENV rbx, rax
+       push rbx
+       push qword [rbp + 8 * 1] ; old ret addr
+ 
+       ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+ 
+       CLOSURE_CODE rbx, rax
+       mov rcx,0
+       mov rcx, PARAM_COUNT
+       add rcx, 4
+       add r9,4
+       SHIFT_FRAME_REGISTER r9
+       shl rcx , 3
+       add rsp,rcx
+       jmp rbx
+           
+       
+           ;pop rbp
+           ;ret";;
+ 
+   (* This is the interface of the module. It constructs a large x86 64-bit string using the routines
+      defined above. The main compiler pipline code (in compiler.ml) calls into this module to get the
+      string of primitive procedures. *)
+   let procs = String.concat "\n\n" [type_queries ; numeric_ops; misc_ops ; self_cons ;self_car ;self_cdr; self_set_car; self_set_cdr; self_apply];;
+ end;;
+ 
