@@ -369,7 +369,7 @@ module Prims : PRIMS = struct
     let self_apply = "apply:
        
        mov rdx, rbp                 ;save old-rbp
-       a:
+       
        
        push rbp
        mov rbp, rsp 
@@ -478,7 +478,7 @@ module Prims : PRIMS = struct
        
        
        mov rbp, rdx                          ;old-rbp
-       f:
+       
        jmp rbx
            
        
