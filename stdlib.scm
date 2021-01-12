@@ -19,7 +19,7 @@
       (map-many f args)))))
 
 
- (define (fold-left f init seq) 
+(define (fold-left f init seq) 
    (if (null? seq) 
        init 
        (fold-left f 
@@ -52,7 +52,6 @@
     )
   )
 )
-
 
 (define append
   (let ((null? null?)
@@ -110,10 +109,14 @@
 		      (/ 1 x)
 		      (fold-left / x y)))))
     (let ((^comparator
-	  (lambda (op)
-	    (lambda (x . ys)
-	      (fold-left (lambda (a b) (and a b)) #t
-			 (map (lambda (y) (op x y)) ys))))))
+	   (lambda (op)
+	     (letrec ((comparator
+		       (lambda (x ys)
+			 (or (null? ys)
+			     (and (op x (car ys))
+				  (comparator (car ys) (cdr ys)))))))
+	       (lambda (x . y)
+		 (comparator x y))))))
       (set! = (^comparator (^numeric-op-dispatcher _=)))
       (set! < (^comparator (^numeric-op-dispatcher _<))))))
 

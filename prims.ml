@@ -4,6 +4,7 @@
    The module works by defining a hierarchy of templates, which call each other
    to form complete routines. See the inline comments below for more information
    on the templates and the individual routines.
+
    Note that the implementation below contain no error handling or correctness-checking
    of any kind. This is because we will not test your compilers on invalid input.
    However, adding correctness-checking and error handling *as general templates* would be
@@ -55,6 +56,7 @@ module Prims : PRIMS = struct
      The argument register assignment follows the x86 64bit Unix ABI, because there needs to be *some*
      kind of consistency, so why not just use the standard ABI.
      See page 22 in https://raw.githubusercontent.com/wiki/hjl-tools/x86-psABI/x86-64-psABI-1.0.pdf
+
      *** FIXME: There's a typo here: PVAR(0) should be rdi, PVAR(1) should be rsi, according to the ABI     
    *)
   let make_unary label body = make_routine label ("mov rsi, PVAR(0)\n\t" ^ body);;
@@ -128,6 +130,7 @@ module Prims : PRIMS = struct
      on the heap with the result, and store the address of the sob_float in rax as the return value.
      This allows us to easily abstract this code into a template that requires a label name and its matching
      arithmetic instruction (which are paired up in the op_map).
+
      Operations on fractional operands:
      ----------------------------------
      The addition and multiplication operations on rational numbers are similar to each other: both load 2 arguments,
@@ -140,6 +143,7 @@ module Prims : PRIMS = struct
      Unlike in the case of floating point arithmetic, rational division is treated differently, and is implemented by
      using the identity (a/b) / (c/d) == (a/b) * (d/c).
      This is done by inverting the second arg (in PVAR(1)) and tail-calling fraction multiplication (`jmp mul`).
+
      Comparators:
      ------------
      While the implementation of the Comparators is slightly more complex, since they make use of `return_boolean`,
@@ -338,6 +342,10 @@ module Prims : PRIMS = struct
          NUMERATOR rdi, rdi
          " ^ inline_gcd ^ "
 	 mov rdx, rax
+         cmp rdx, 0
+         jge .make_result
+         neg rdx
+         .make_result:
          MAKE_RATIONAL(rax, rdx, 1)", make_binary, "gcd";  
       ] in
     String.concat "\n\n" (List.map (fun (a, b, c) -> (b c a)) misc_parts);;
