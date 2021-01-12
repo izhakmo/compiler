@@ -620,8 +620,12 @@ let allocate_mem_func arr_without_dups =
                             "Optcont"; (string_of_int address) ; ":\n";
                             ]
         in
+        
 
-        let lambda_code = String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
+        let lambda_code =
+          let new_father_var_len = ((List.length vars) + 1)
+          in
+          String.concat "" ["jmp Lcont"; (string_of_int address);"\n";
                                             "Lcode"; (string_of_int address); ":\n";
 
                                                 (* test *)
@@ -634,7 +638,9 @@ let allocate_mem_func arr_without_dups =
                                                 "push rbp\n"; 
                                                 "mov rbp , rsp\n"; 
                                                 (* ";ref you "; (string_of_int address) ;"\n"; *)
-                                                (generate_func consts fvars body lbl_index env_num (List.length vars));
+                                                (* father_varlen must add 1 to the vars *)
+                                                (generate_func consts fvars body lbl_index env_num new_father_var_len);
+                                                
                                                 "leave\n";
                                                 "ret\n";
                                             "Lcont"; (string_of_int address); ":\n"] in
@@ -708,159 +714,53 @@ let allocate_mem_func arr_without_dups =
 
 end;;
 open Code_Gen;;
-
-
 (* 
-(LambdaSimple' (["x"],
-  Seq'
-  [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-    BoxGet' (VarParam ("x", 0));
-     LambdaSimple' (["x"],
-      Seq'
-       [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-         BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-          LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
-     LambdaSimple' ([],
-      BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))])) *)
-
-(* 
-
-procces_const (
-LambdaSimple' ([],
-Seq'
-[Const' (Sexpr (Bool(true)));
-Const' (Sexpr (Number (Fraction(1,1))));
-
-  Applic' (LambdaSimple' ([], Var' (VarFree "x")), []);
-Applic'
-(LambdaSimple' (["x"],
-Seq'
-[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-Const' (Sexpr (Nil));
-Const' (Void);
-Const' (Sexpr (Bool(true)));
-BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]),
-[Const' (Sexpr (Number (Fraction(2,1))))]);
-ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
-[Const' (Sexpr (Number (Fraction(3,1))))])])
-)
-;;
- *)
-
-(* 
- make_consts_tbl
- ([(LambdaSimple' ([],
- Seq'
- [Const' (Sexpr (String("moshe_hagever")));
- Const' (Sexpr (Number (Fraction(1,1))));
- Const'(Sexpr(Pair(  (String("moshe")), (Number (Fraction(2,1))) )));
  
-   Applic' (LambdaSimple' ([], Var' (VarFree "x")), []);
- Applic'
- (LambdaSimple' (["x"],
- Seq'
- [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
- Const' (Sexpr (Nil));
- Const' (Sexpr(Symbol("moshe_hagever")));
- Const' (Void);
- Const' (Sexpr (Bool(true)));
- BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
- LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]),
- [Const' (Sexpr (Number (Fraction(2,1))))]);
- ApplicTP' (LambdaOpt' ([], "x", Var' (VarParam ("x", 0))),
- [Const' (Sexpr (Number (Fraction(3,1))))])]));
+one_to_three "((lambda (x . y)
+     ((lambda ()
+        (set-cdr! x y)))
+     x)
+   (cons 1 2))";;
+- : expr' list =
 
- (LambdaSimple' (["x"],
-  Seq'
-  [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-    BoxGet' (VarParam ("x", 0));
-     LambdaSimple' (["x"],
-      Seq'
-       [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-         BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-          LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
-     LambdaSimple' ([],
-      BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]))
+[Applic'
+  (LambdaOpt' (["x"], "y",
+    Seq'
+     [Applic'
+       (LambdaSimple' ([],
+         ApplicTP' (Var' (VarFree "set-cdr!"),
+          [Var' (VarBound ("x", 0, 0)); Var' (VarBound ("y", 0, 1))])),
+       []);
+      Var' (VarParam ("x", 0))]),
+  [Applic' (Var' (VarFree "cons"),
+    [Const' (Sexpr (Number (Fraction (1, 1))));
+     Const' (Sexpr (Number (Fraction (2, 1))))])])]
+
+
  
- ])
-  *)
-  (*
-  
-  
-*)
-(* 
 
-  make_fvars_tbl ([
-  Applic' (Var' (VarFree "y"),
- [LambdaSimple' (["y"],
-   Seq'
-    [Set'(VarParam ("y", 0), Box' (VarParam ("y", 0)));
-      Set' (VarFree "a",
-        LambdaSimple' (["b"],
-         ApplicTP' (Var' (VarFree "a"), [Var' (VarParam ("b", 0))])));
-       Set' (VarFree "t",
-        LambdaSimple' (["x"],
-         Seq'
-          [BoxSet' (VarBound ("y", 0, 0),
-            LambdaSimple' (["j"],
-             ApplicTP' (Var' (VarBound ("x", 0, 0)),
-              [Var' (VarParam ("j", 0)); Var' (VarBound ("x", 0, 0))])));
-           Var' (VarFree "h")]));
-       ApplicTP' (BoxGet' (VarParam ("y", 0)), [Var' (VarFree "a")])])])
-  ]);;
-- : (string * int) list = [("y", 0); ("a", 8); ("h", 16)]         *)
 
-(* 
-[Seq'
-    [Set'(VarParam ("y", 0), Var'(VarParam ("y", 0)));
-      Set' (VarFree "a",
-         ApplicTP' (Var' (VarFree "a"), [Var' (VarParam ("b", 0))]))]]
-          *)
-
-(* 
-return_address_in_const_table_func ([(Sexpr (String "moshe"), (0, "MAKE_LITERAL_STRING moshe\n"));
- (Sexpr (Number (Fraction (1, 1))), (14, "MAKE_LITERAL_RATIONAL(1, 1)\n"));
- (Sexpr Nil, (31, "MAKE_CONST_NIL\n")); (Void, (32, "MAKE_CONST_VOID\n"));
- (Sexpr (Bool true), (33, "MAKE_LITERAL_BOOL(1)\n"));
- (Sexpr (Number (Fraction (2, 1))), (35, "MAKE_LITERAL_RATIONAL(2, 1)\n"));
- (Sexpr (Number (Fraction (3, 1))), (52, "MAKE_LITERAL_RATIONAL(3, 1)\n"))])
-(Sexpr(Number (Fraction (1, 1))));; *)
-
-(* 
-generate
-(make_consts_tbl
-([(LambdaSimple' (["x"],
-Seq'
-[Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-  BoxGet' (VarParam ("x", 0));
-   LambdaSimple' (["x"],
+ one_to_three "((lambda (x . y)
+     
+        (set-cdr! x y)
+     x)
+   (cons 1 2))
+";;
+- : expr' list =
+[Applic'
+  (LambdaOpt' (["x"], "y",
     Seq'
-     [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-       BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-        LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
-   LambdaSimple' ([],
-    BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]))])) (make_fvars_tbl
-    ([(LambdaSimple' (["x"],
-    Seq'
-    [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-      BoxGet' (VarParam ("x", 0));
-       LambdaSimple' (["x"],
-        Seq'
-         [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-           BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-            LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
-       LambdaSimple' ([],
-        BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))]))])) (LambdaSimple' (["x"],
-        Seq'
-        [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-          BoxGet' (VarParam ("x", 0));
-           LambdaSimple' (["x"],
-            Seq'
-             [Set' ( (VarParam ("x", 0)), Box' (VarParam ("x", 0)));
-               BoxSet' (VarParam ("x", 0), Const' (Sexpr (Number (Fraction(1,1)))));
-                LambdaSimple' ([], BoxGet' (VarBound ("x", 0, 0)))]);
-           LambdaSimple' ([],
-            BoxSet' (VarBound ("x", 0, 0), BoxGet' (VarBound ("x", 0, 0))))])) *)
-
-
+     [Applic' (Var' (VarFree "set-cdr!"),
+       [Var' (VarParam ("x", 0)); Var' (VarParam ("y", 1))]);
+      Var' (VarParam ("x", 0))]),
+  [Applic' (Var' (VarFree "cons"),
+    [Const' (Sexpr (Number (Fraction (1, 1))));
+     Const' (Sexpr (Number (Fraction (2, 1))))])])]
+ 
+ 
+(
+  (lambda (x . y)
+     ((lambda ()
+        (set-cdr! x y)))
+                                    x)
+   (cons 1 2)) *)
