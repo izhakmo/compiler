@@ -43,12 +43,11 @@
 
 (define cons_start_helper_remove_last_nil
 (let ((cons cons) (car car) (null? null?) (cdr cdr) (apply apply) (fold-right fold-right) (fold-left fold-left))
-  (lambda (lst)
-    (if (null? lst)
-      lst
-        (if (null? (cdr lst))
-            (car lst)
-            (cons (car lst) (cons_start_helper_remove_last_nil (cdr lst)))
+  (lambda (x)
+    (if (null? x) x
+        (if (null? (cdr x))
+            (car x)
+            (cons (car x) (cons_start_helper_remove_last_nil (cdr x)))
         )
     )
   )
