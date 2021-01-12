@@ -480,8 +480,8 @@ let allocate_mem_func arr_without_dups =
                                         (* "jmp rax→ code"; *)
                                         "CLOSURE_CODE rbx, rax\n      ;move_and_pop_stack_frame_TP\n";
                                         (* fix the stack *)
-                                        (* "mov r8, qword [rbp]\n "; *)
-                                        "mov r8, rbp\n ";
+                                        "mov r8, qword [rbp]\n ";
+                                        (* "mov r8, rbp\n "; *)
 
                                         "mov rcx,0\n  ;clean stack if there is difference of args. rcx = 4+args rcx *8\n";
                                         "mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame\n";

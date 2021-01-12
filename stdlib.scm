@@ -20,41 +20,46 @@
 
 
 (define fold-left 
+(let ((cons cons) (car car) (null? null?) (cdr cdr) (apply apply) )
+
 	(lambda (func base lst)
 		(if (null? lst) 
 		base
 		(fold-left func (func (car lst) base) (cdr lst))
 		)
 	)
-)
+))
 
 (define fold-right
+(let ((cons cons) (car car) (null? null?) (cdr cdr) (apply apply))
+
 	(lambda (func base lst)
 		(if (null? lst) 
 		base
 		(func (car lst) (fold-right func base (cdr lst)))
 		)
 	)
-)
-
-
-(define cons*
-
-  (lambda x
-    (remove_nil x)
 ))
 
-(define remove_nil
+(define cons_start_helper_remove_last_nil
+(let ((cons cons) (car car) (null? null?) (cdr cdr) (apply apply) (fold-right fold-right) (fold-left fold-left))
   (lambda (lst)
     (if (null? lst)
       lst
         (if (null? (cdr lst))
             (car lst)
-            (cons (car lst) (remove_nil (cdr lst)))
+            (cons (car lst) (cons_start_helper_remove_last_nil (cdr lst)))
         )
     )
   )
-)
+))
+
+(define cons*
+  (lambda x
+    (cons_start_helper_remove_last_nil x)
+))
+
+
 
 (define append
   (let ((null? null?)
