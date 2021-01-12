@@ -203,6 +203,7 @@ pop rax
 %macro SHIFT_FRAME_REGISTER 1
 		push rax
 		push rbx
+		push rdx
 		mov rax, PARAM_COUNT ;PARAM_COUNT of father frame
 		add rax, 4 				;(not TODO) 4 cells if not magic , 5 if use of magic
 		
@@ -227,7 +228,7 @@ pop rax
 		
 ; %endrep
 %%finish_loop:
-
+pop rdx
 pop rbx
 pop rax
 

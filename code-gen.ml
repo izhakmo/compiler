@@ -348,7 +348,9 @@ let allocate_mem_func arr_without_dups =
                                               "pop qword [rax]\n";
                                               "mov rax, SOB_VOID_ADDRESS\n"]
    
-    | If'(t1, th1, el1)->   let updated_index = (index + 1) in
+    | If'(t1, th1, el1)->   
+                            (* let updated_index = (index + 1) in *)
+                            let updated_index = index in
                             let a = (ref updated_index) in
                             let address = 2*(Obj.magic a) in
 

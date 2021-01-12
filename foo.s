@@ -10,7 +10,7 @@ malloc_pointer:
 ;;; here we REServe enough Quad-words (64-bit "cells") for the free variables
 ;;; each free variable has 8 bytes reserved for a 64-bit pointer to its value
 fvar_tbl:
-    resq 31
+    resq 49
 
 section .data
 const_tbl:
@@ -22,13 +22,33 @@ MAKE_LITERAL_BOOL(0)
 
 MAKE_LITERAL_BOOL(1)
 
+MAKE_LITERAL_STRING "whatever"
+
+MAKE_LITERAL_SYMBOL(const_tbl+6)
+
+MAKE_LITERAL_CHAR(0)
+
+MAKE_LITERAL_RATIONAL(0, 1)
+
 MAKE_LITERAL_RATIONAL(1, 1)
+
+MAKE_LITERAL_RATIONAL(-1, 1)
 
 MAKE_LITERAL_RATIONAL(2, 1)
 
 MAKE_LITERAL_RATIONAL(3, 1)
 
 MAKE_LITERAL_RATIONAL(4, 1)
+
+MAKE_LITERAL_RATIONAL(5, 1)
+
+MAKE_LITERAL_RATIONAL(6, 1)
+
+MAKE_LITERAL_PAIR(const_tbl+153,const_tbl+1)
+
+MAKE_LITERAL_PAIR(const_tbl+136,const_tbl+170)
+
+MAKE_LITERAL_PAIR(const_tbl+119,const_tbl+187)
 
 
 ;;; These macro definitions are required for the primitive
@@ -114,62 +134,4881 @@ MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, denominator)
 mov [fvar_tbl+192], rax
 MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, gcd)
 mov [fvar_tbl+200], rax
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, car)
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, apply)
 mov [fvar_tbl+208], rax
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cdr)
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, car)
 mov [fvar_tbl+216], rax
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cons)
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cdr)
 mov [fvar_tbl+224], rax
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_car)
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, cons)
 mov [fvar_tbl+232], rax
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_cdr)
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_car)
 mov [fvar_tbl+240], rax
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, set_cdr)
+mov [fvar_tbl+248], rax
 
 user_code_fragment:
 ;;; The code you compiled will be added here.
 ;;; It will be executed immediately after the closures for 
 ;;; the primitive procedures are set up.
-mov rax, const_tbl+57
+mov rax, qword [ fvar_tbl + 208]
 push rax
-mov rax, const_tbl+40
+mov rax, qword [ fvar_tbl + 232]
+push rax
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+push 5
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210367008)
+jmp Lcont140715210367008
+Lcode140715210367008:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
 push rax
 mov rax, const_tbl+23
 push rax
-mov rax, const_tbl+6
-push rax
-push 4
-MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140069152489760)
-jmp Lcont140069152489760
-Lcode140069152489760:
+push 2
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *5 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210366088)
+jmp Lcont140715210366088
+Lcode140715210366088:
 push rbp
 mov rbp , rsp
-mov rbx, PARAM_COUNT_OPT
-cmp rbx, 3
-je LnoVariadic140069152489760
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+mov rax, qword [rbp + 40]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 40],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *2 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210364272)
+jmp Lcont140715210364272
+Lcode140715210364272:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210364136
+mov rax, const_tbl+1
+jmp Lexit140715210364136
+Lelse140715210364136:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210364136:
+leave
+ret
+Lcont140715210364272:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *2 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210346096)
+jmp Lcont140715210346096
+Lcode140715210346096:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210345960
+mov rax, const_tbl+1
+jmp Lexit140715210345960
+Lelse140715210345960:
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210345960:
+leave
+ret
+Lcont140715210346096:
+push rax
+mov rax, qword [rbp + 40]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *2 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210332704)
+jmp Lcont140715210332704
+Lcode140715210332704:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *0 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210332568)
+jmp Lcont140715210332568
+Lcode140715210332568:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715210332568
 ;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
-mov rcx, PARAM_COUNT_OPT
-sub rcx, 3 ; rcx contains the length of varicadic
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
 mov rsi,rcx
 CREATE_VARIADIC_OPT_LIST rsi
-mov rdx, 4 ; rdx contains the length of vars plus 1 (vars +variadic len)
-mov PARAM_COUNT_OPT, rdx
-dec rcx
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
 mov rsi,rcx
-LAMBDA_OPT_SHIFT_FRAME rsi
-shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT-(1+vars)
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
 add rsp,rcx
-jmp Optcont140069152489760
-LnoVariadic140069152489760:
-SHIFT_FRAME_DOWN_BY_ONE_CELL 3
-sub rsp,WORD_SIZE    ;tell the stack that we are down by one cell
-Optcont140069152489760:
-pop rbp
+;for commit
+jmp Optcont140715210332568
+LnoVariadic140715210332568:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715210332568:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715210332568:
+leave
+ret
+Lcont140715210332704:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715210366088:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715210367008:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 256], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210317464)
+jmp Lcont140715210317464
+Lcode140715210317464:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210317328
+mov rax, qword [rbp + 40]
+jmp Lexit140715210317328
+Lelse140715210317328:
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 224]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 216]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 3
+mov rax, qword [ fvar_tbl + 264]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210317328:
+leave
+ret
+Lcont140715210317464:
+mov qword [ fvar_tbl + 264], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210299160)
+jmp Lcont140715210299160
+Lcode140715210299160:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210299024
+mov rax, qword [rbp + 40]
+jmp Lexit140715210299024
+Lelse140715210299024:
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 224]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 3
+mov rax, qword [ fvar_tbl + 272]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 48]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 216]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210299024:
+leave
+ret
+Lcont140715210299160:
+mov qword [ fvar_tbl + 272], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210280720)
+jmp Lcont140715210280720
+Lcode140715210280720:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715210280720
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715210280720
+LnoVariadic140715210280720:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715210280720:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 280]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715210280720:
+mov qword [ fvar_tbl + 288], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210270304)
+jmp Lcont140715210270304
+Lcode140715210270304:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210270168
+mov rax, qword [rbp + 32]
+jmp Lexit140715210270168
+Lelse140715210270168:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 224]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210270080
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 216]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715210270080
+Lelse140715210270080:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 224]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 280]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [ fvar_tbl + 216]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [ fvar_tbl + 232]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210270080:
+Lexit140715210270168:
+leave
+ret
+Lcont140715210270304:
+mov qword [ fvar_tbl + 280], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 232]
+push rax
+mov rax, qword [ fvar_tbl + 272]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+push 3
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715210257488)
+jmp Lcont140715210257488
+Lcode140715210257488:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *3 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210257352)
+jmp Lcont140715210257352
+Lcode140715210257352:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715210257352
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715210257352
+LnoVariadic140715210257352:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715210257352:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+1
+push rax
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715210254888)
+jmp Lcont140715210254888
+Lcode140715210254888:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715210254752
+mov rax, qword [rbp + 32]
+jmp Lexit140715210254752
+Lelse140715210254752:
+mov rax, qword [rbp + 32]
+push rax
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715210254752:
+leave
+ret
+Lcont140715210254888:
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715210257352:
+leave
+ret
+Lcont140715210257488:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 296], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212335632)
+jmp Lcont140715212335632
+Lcode140715212335632:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715212335632
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212335632
+LnoVariadic140715212335632:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715212335632:
 push rbp
 mov rbp , rsp
 mov rax, qword [rbp + 32]
 leave
 ret
-Lcont140069152489760:
+Lcont140715212335632:
+mov qword [ fvar_tbl + 304], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 24]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+push 3
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212327528)
+jmp Lcont140715212327528
+Lcode140715212327528:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *3 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212326888)
+jmp Lcont140715212326888
+Lcode140715212326888:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212325896)
+jmp Lcont140715212325896
+Lcode140715212325896:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212325760
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212324248
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212324248
+Lelse140715212324248:
+mov rax, const_tbl+2
+Lexit140715212324248:
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212325760
+Lexitor140715212325760:
+leave
+ret
+Lcont140715212325896:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212310936)
+jmp Lcont140715212310936
+Lcode140715212310936:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+leave
+ret
+Lcont140715212310936:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212326888:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212327528:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 312], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 96]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+push 3
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212301248)
+jmp Lcont140715212301248
+Lcode140715212301248:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *3 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212301112)
+jmp Lcont140715212301112
+Lcode140715212301112:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715212301112
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212301112
+LnoVariadic140715212301112:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715212301112:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212299184
+mov rax, const_tbl+32
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212299184
+Lelse140715212299184:
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212299184:
+leave
+ret
+Lcont140715212301112:
+leave
+ret
+Lcont140715212301248:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 96], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212287128)
+jmp Lcont140715212287128
+Lcode140715212287128:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212286992
+mov rax, const_tbl+2
+jmp Lexit140715212286992
+Lelse140715212286992:
+mov rax, const_tbl+4
+Lexit140715212286992:
+leave
+ret
+Lcont140715212287128:
+mov qword [ fvar_tbl + 320], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 32]
+push rax
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 176]
+push rax
+mov rax, qword [ fvar_tbl + 168]
+push rax
+mov rax, qword [ fvar_tbl + 160]
+push rax
+mov rax, qword [ fvar_tbl + 152]
+push rax
+mov rax, qword [ fvar_tbl + 144]
+push rax
+mov rax, qword [ fvar_tbl + 256]
+push rax
+mov rax, qword [ fvar_tbl + 264]
+push rax
+mov rax, qword [ fvar_tbl + 128]
+push rax
+mov rax, qword [ fvar_tbl + 16]
+push rax
+mov rax, qword [ fvar_tbl + 8]
+push rax
+push 13
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212276560)
+jmp Lcont140715212276560
+Lcode140715212276560:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *13 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 72] ;loop_copy_vars_from_stack
+mov qword [rcx + 40], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 80] ;loop_copy_vars_from_stack
+mov qword [rcx + 48], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 88] ;loop_copy_vars_from_stack
+mov qword [rcx + 56], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 96] ;loop_copy_vars_from_stack
+mov qword [rcx + 64], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 104] ;loop_copy_vars_from_stack
+mov qword [rcx + 72], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 112] ;loop_copy_vars_from_stack
+mov qword [rcx + 80], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 120] ;loop_copy_vars_from_stack
+mov qword [rcx + 88], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 128] ;loop_copy_vars_from_stack
+mov qword [rcx + 96], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212276400)
+jmp Lcont140715212276400
+Lcode140715212276400:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212276264)
+jmp Lcont140715212276264
+Lcode140715212276264:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212263880
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715212263880
+Lelse140715212263880:
+mov rax, const_tbl+2
+Lexit140715212263880:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212276128
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212276128
+Lelse140715212276128:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212270736
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715212270736
+Lelse140715212270736:
+mov rax, const_tbl+2
+Lexit140715212270736:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212276040
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212276040
+Lelse140715212276040:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212276040:
+Lexit140715212276128:
+leave
+ret
+Lcont140715212276264:
+leave
+ret
+Lcont140715212276400:
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *13 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 72] ;loop_copy_vars_from_stack
+mov qword [rcx + 40], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 80] ;loop_copy_vars_from_stack
+mov qword [rcx + 48], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 88] ;loop_copy_vars_from_stack
+mov qword [rcx + 56], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 96] ;loop_copy_vars_from_stack
+mov qword [rcx + 64], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 104] ;loop_copy_vars_from_stack
+mov qword [rcx + 72], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 112] ;loop_copy_vars_from_stack
+mov qword [rcx + 80], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 120] ;loop_copy_vars_from_stack
+mov qword [rcx + 88], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 128] ;loop_copy_vars_from_stack
+mov qword [rcx + 96], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212245232)
+jmp Lcont140715212245232
+Lcode140715212245232:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212244992)
+jmp Lcont140715212244992
+Lcode140715212244992:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715212244992
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212244992
+LnoVariadic140715212244992:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715212244992:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+34
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212244992:
+mov qword [ fvar_tbl + 144], rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212235312)
+jmp Lcont140715212235312
+Lcode140715212235312:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715212235312
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212235312
+LnoVariadic140715212235312:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715212235312:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+51
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 48]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212235312:
+mov qword [ fvar_tbl + 152], rax
+mov rax, SOB_VOID_ADDRESS
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 56]
+push rax
+push 1
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212224304)
+jmp Lcont140715212224304
+Lcode140715212224304:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212224168)
+jmp Lcont140715212224168
+Lcode140715212224168:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715212224168
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212224168
+LnoVariadic140715212224168:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715212224168:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 96]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212222240
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+51
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212222240
+Lelse140715212222240:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212222240:
+leave
+ret
+Lcont140715212224168:
+leave
+ret
+Lcont140715212224304:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 160], rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212210400)
+jmp Lcont140715212210400
+Lcode140715212210400:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212209760)
+jmp Lcont140715212209760
+Lcode140715212209760:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *4 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *3] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *4], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212208768)
+jmp Lcont140715212208768
+Lcode140715212208768:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 24]
+mov rax, qword [rax + 96]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212208632
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 24]
+mov rax, qword [rax + 80]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212207120
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 24]
+mov rax, qword [rax + 88]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 24]
+mov rax, qword [rax + 80]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212207120
+Lelse140715212207120:
+mov rax, const_tbl+2
+Lexit140715212207120:
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212208632
+Lexitor140715212208632:
+leave
+ret
+Lcont140715212208768:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *4 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *3] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *4], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212193568)
+jmp Lcont140715212193568
+Lcode140715212193568:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *5 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *3] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *4], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *4] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *5], rdx ;loop_copy_env
+mov rax, WORD_SIZE *0 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212193432)
+jmp Lcont140715212193432
+Lcode140715212193432:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715212193432
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212193432
+LnoVariadic140715212193432:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715212193432:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212193432:
+leave
+ret
+Lcont140715212193568:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212209760:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212210400:
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212176680)
+jmp Lcont140715212176680
+Lcode140715212176680:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 64]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 168], rax
+mov rax, SOB_VOID_ADDRESS
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 72]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 176], rax
+mov rax, SOB_VOID_ADDRESS
+leave
+ret
+Lcont140715212176680:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212245232:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212276560:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 32]
+push rax
+mov rax, qword [ fvar_tbl + 144]
+push rax
+mov rax, qword [ fvar_tbl + 208]
+push rax
+push 3
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212147568)
+jmp Lcont140715212147568
+Lcode140715212147568:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *3 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212147432)
+jmp Lcont140715212147432
+Lcode140715212147432:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715212147432
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212147432
+LnoVariadic140715212147432:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715212147432:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212145504
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+68
+push rax
+push 2
+mov rax, qword [ fvar_tbl + 152]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, const_tbl+34
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212145504
+Lelse140715212145504:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, const_tbl+68
+push rax
+push 2
+mov rax, qword [ fvar_tbl + 152]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212145504:
+leave
+ret
+Lcont140715212147432:
+leave
+ret
+Lcont140715212147568:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 328], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 168]
+push rax
+mov rax, qword [ fvar_tbl + 176]
+push rax
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 320]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+push 6
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212127832)
+jmp Lcont140715212127832
+Lcode140715212127832:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *6 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 72] ;loop_copy_vars_from_stack
+mov qword [rcx + 40], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212127192)
+jmp Lcont140715212127192
+Lcode140715212127192:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212126200)
+jmp Lcont140715212126200
+Lcode140715212126200:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212126064
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212124552
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 40]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212124112
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212124112
+Lelse140715212124112:
+mov rax, const_tbl+2
+Lexit140715212124112:
+jmp Lexit140715212124552
+Lelse140715212124552:
+mov rax, const_tbl+2
+Lexit140715212124552:
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212126064
+Lexitor140715212126064:
+leave
+ret
+Lcont140715212126200:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212106832)
+jmp Lcont140715212106832
+Lcode140715212106832:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *0 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212106696)
+jmp Lcont140715212106696
+Lcode140715212106696:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 2
+jl LnoVariadic140715212106696
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 1 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 2 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212106696
+LnoVariadic140715212106696:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 4      ; vars+3 times
+Optcont140715212106696:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212106696:
+leave
+ret
+Lcont140715212106832:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212127192:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212127832:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 336], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 32]
+push rax
+mov rax, qword [ fvar_tbl + 200]
+push rax
+push 4
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212089808)
+jmp Lcont140715212089808
+Lcode140715212089808:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *4 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212089168)
+jmp Lcont140715212089168
+Lcode140715212089168:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212088176)
+jmp Lcont140715212088176
+Lcode140715212088176:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212088040
+mov rax, qword [rbp + 32]
+jmp Lexit140715212088040
+Lelse140715212088040:
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212088040:
+leave
+ret
+Lcont140715212088176:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212073248)
+jmp Lcont140715212073248
+Lcode140715212073248:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *0 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212073112)
+jmp Lcont140715212073112
+Lcode140715212073112:
+mov rbx, PARAM_COUNT_OPT_RSP   ;params
+cmp rbx, 1
+jl LnoVariadic140715212073112
+;OPT ,yesVariadic, execute this lines if lambda applied NOT on exect number of params
+mov rcx, PARAM_COUNT_OPT_RSP
+sub rcx, 0 ; rcx contains the length of varicadic
+mov rsi,rcx
+CREATE_VARIADIC_OPT_LIST rsi
+mov rdx, 1 ; rdx contains the length of vars plus 1 (vars +variadic len)
+mov PARAM_COUNT_OPT_RSP, rdx       ;update num args
+dec rcx      ;num of cells shifts up
+mov rsi,rcx
+LAMBDA_OPT_SHIFT_FRAME_UP rsi ;rsi is the number of shift requiered 
+shl rcx , 3  ;clean stack if there is difference of args. rcx = PARAM_COUNT_OPT_RSP-(1+vars)
+add rsp,rcx
+;for commit
+jmp Optcont140715212073112
+LnoVariadic140715212073112:
+SHIFT_FRAME_DOWN_BY_ONE_CELL 3      ; vars+3 times
+Optcont140715212073112:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212071184
+mov rax, const_tbl+34
+jmp Lexit140715212071184
+Lelse140715212071184:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715212071184:
+leave
+ret
+Lcont140715212073112:
+leave
+ret
+Lcont140715212073248:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212089168:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212089808:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 200], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 168]
+push rax
+push 1
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212054392)
+jmp Lcont140715212054392
+Lcode140715212054392:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212054256)
+jmp Lcont140715212054256
+Lcode140715212054256:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+34
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212054256:
+leave
+ret
+Lcont140715212054392:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 344], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 192]
+push rax
+mov rax, qword [ fvar_tbl + 168]
+push rax
+mov rax, qword [ fvar_tbl + 16]
+push rax
+push 3
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212039584)
+jmp Lcont140715212039584
+Lcode140715212039584:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *3 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212039448)
+jmp Lcont140715212039448
+Lcode140715212039448:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715212039312
+mov rax, const_tbl+51
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715212039312
+Lelse140715212039312:
+mov rax, const_tbl+2
+Lexit140715212039312:
+leave
+ret
+Lcont140715212039448:
+leave
+ret
+Lcont140715212039584:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 352], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 16]
+push rax
+mov rax, qword [ fvar_tbl + 8]
+push rax
+push 2
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212025768)
+jmp Lcont140715212025768
+Lcode140715212025768:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *2 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212025632)
+jmp Lcont140715212025632
+Lcode140715212025632:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212025496
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+cmp rax, SOB_FALSE_ADDRESS
+jne Lexitor140715212025496
+Lexitor140715212025496:
+leave
+ret
+Lcont140715212025632:
+leave
+ret
+Lcont140715212025768:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 360], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 144]
+push rax
+mov rax, qword [ fvar_tbl + 264]
+push rax
+push 2
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715212008384)
+jmp Lcont140715212008384
+Lcode140715212008384:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *2 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212008248)
+jmp Lcont140715212008248
+Lcode140715212008248:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+mov rax, const_tbl+34
+push rax
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715212007576)
+jmp Lcont140715212007576
+Lcode140715212007576:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+51
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212007576:
+push rax
+push 3
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 7
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715212008248:
+leave
+ret
+Lcont140715212008384:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 368], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 232]
+push rax
+mov rax, qword [ fvar_tbl + 328]
+push rax
+mov rax, qword [ fvar_tbl + 176]
+push rax
+mov rax, qword [ fvar_tbl + 72]
+push rax
+mov rax, qword [ fvar_tbl + 80]
+push rax
+push 5
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715211992656)
+jmp Lcont140715211992656
+Lcode140715211992656:
+push rbp
+mov rbp , rsp
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *5 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211992520)
+jmp Lcont140715211992520
+Lcode140715211992520:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211991880)
+jmp Lcont140715211991880
+Lcode140715211991880:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211990888)
+jmp Lcont140715211990888
+Lcode140715211990888:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+34
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211990752
+mov rax, qword [rbp + 40]
+jmp Lexit140715211990752
+Lelse140715211990752:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, const_tbl+51
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715211990752:
+leave
+ret
+Lcont140715211990888:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *3 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *2] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *3], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211975560)
+jmp Lcont140715211975560
+Lcode140715211975560:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+1
+push rax
+mov rax, const_tbl+51
+push rax
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 16]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715211975560:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715211991880:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715211992520:
+leave
+ret
+Lcont140715211992656:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 376], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, qword [ fvar_tbl + 112]
+push rax
+mov rax, qword [ fvar_tbl + 224]
+push rax
+mov rax, qword [ fvar_tbl + 216]
+push rax
+mov rax, qword [ fvar_tbl + 136]
+push rax
+mov rax, qword [ fvar_tbl + 48]
+push rax
+mov rax, qword [ fvar_tbl + 40]
+push rax
+mov rax, qword [ fvar_tbl + 24]
+push rax
+mov rax, qword [ fvar_tbl + 8]
+push rax
+mov rax, qword [ fvar_tbl + 16]
+push rax
+mov rax, qword [ fvar_tbl + 376]
+push rax
+mov rax, qword [ fvar_tbl + 168]
+push rax
+push 11
+MAKE_CLOSURE(rax, SOB_NIL_ADDRESS, Lcode140715211951192)
+jmp Lcont140715211951192
+Lcode140715211951192:
+push rbp
+mov rbp , rsp
+mov rax, const_tbl+23
+push rax
+push 1
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *1 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rax, WORD_SIZE *11 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 40] ;loop_copy_vars_from_stack
+mov qword [rcx + 8], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 48] ;loop_copy_vars_from_stack
+mov qword [rcx + 16], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 56] ;loop_copy_vars_from_stack
+mov qword [rcx + 24], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 64] ;loop_copy_vars_from_stack
+mov qword [rcx + 32], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 72] ;loop_copy_vars_from_stack
+mov qword [rcx + 40], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 80] ;loop_copy_vars_from_stack
+mov qword [rcx + 48], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 88] ;loop_copy_vars_from_stack
+mov qword [rcx + 56], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 96] ;loop_copy_vars_from_stack
+mov qword [rcx + 64], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 104] ;loop_copy_vars_from_stack
+mov qword [rcx + 72], rdx ;loop_copy_vars_from_stack
+mov rdx, qword [rbp + 112] ;loop_copy_vars_from_stack
+mov qword [rcx + 80], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211950552)
+jmp Lcont140715211950552
+Lcode140715211950552:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+MALLOC rcx, WORD_SIZE
+mov qword [rcx], rax
+mov rax, rcx
+
+mov qword [rbp + 32],rax
+mov rax, SOB_VOID_ADDRESS
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211949560)
+jmp Lcont140715211949560
+Lcode140715211949560:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211910088
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 16]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715211910088
+Lelse140715211910088:
+mov rax, const_tbl+2
+Lexit140715211910088:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211949424
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715211949424
+Lelse140715211949424:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211915384
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 24]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715211915384
+Lelse140715211915384:
+mov rax, const_tbl+2
+Lexit140715211915384:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211949336
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715211949336
+Lelse140715211949336:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 40]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211920680
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 40]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715211920680
+Lelse140715211920680:
+mov rax, const_tbl+2
+Lexit140715211920680:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211949248
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 80]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 80]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 0]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715211949248
+Lelse140715211949248:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211928848
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 32]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715211928848
+Lelse140715211928848:
+mov rax, const_tbl+2
+Lexit140715211928848:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211949160
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 64]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 64]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211938664
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 72]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 72]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715211938664
+Lelse140715211938664:
+mov rax, const_tbl+2
+Lexit140715211938664:
+jmp Lexit140715211949160
+Lelse140715211949160:
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 48]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211942048
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 48]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+jmp Lexit140715211942048
+Lelse140715211942048:
+mov rax, const_tbl+2
+Lexit140715211942048:
+cmp rax, SOB_FALSE_ADDRESS
+je Lelse140715211949072
+mov rax, qword [rbp + 40]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 1
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 8]
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+jmp Lexit140715211949072
+Lelse140715211949072:
+mov rax, qword [rbp + 40]
+push rax
+mov rax, qword [rbp + 32]
+push rax
+push 2
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 8]
+mov rax, qword [rax + 56]
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 6
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+Lexit140715211949072:
+Lexit140715211949160:
+Lexit140715211949248:
+Lexit140715211949336:
+Lexit140715211949424:
+leave
+ret
+Lcont140715211949560:
+push rax
+mov rax, qword [rbp + 32]
+pop qword [rax]
+mov rax, SOB_VOID_ADDRESS
+push 0
+
+
+mov rcx, qword [rbp + WORD_SIZE * 2] ;get previous env
+mov rax, WORD_SIZE *2 ;size of ext env
+MALLOC rbx, rax ;malloc vector for ext env 
+mov rdx, qword [rcx + WORD_SIZE *0] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *1], rdx ;loop_copy_env
+mov rdx, qword [rcx + WORD_SIZE *1] ;loop_copy_env
+mov qword [rbx + WORD_SIZE *2], rdx ;loop_copy_env
+mov rax, WORD_SIZE *1 ;size of new major 0 vars
+MALLOC rcx, rax ;malloc vector major 0 vars
+mov rdx, qword [rbp + 32] ;loop_copy_vars_from_stack
+mov qword [rcx + 0], rdx ;loop_copy_vars_from_stack
+mov qword [rbx + 0] , rcx
+MAKE_CLOSURE(rax, rbx, Lcode140715211904688)
+jmp Lcont140715211904688
+Lcode140715211904688:
+push rbp
+mov rbp , rsp
+mov rax, qword [rbp + 16]
+mov rax, qword [rax + 0]
+mov rax, qword [rax + 0]
+mov rax, qword [rax]
+leave
+ret
+Lcont140715211904688:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 4
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715211950552:
+CLOSURE_ENV rbx, rax
+push rbx
+push qword [rbp + 8 * 1] ; old ret addr
+CLOSURE_CODE rbx, rax
+      ;move_and_pop_stack_frame_TP
+mov r8, qword [rbp]
+ mov rcx,0
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+mov rcx, PARAM_COUNT ;PARAM_COUNT of father frame
+add rcx, 4
+  ;(not TODO) 4 cells if not magic , 5 if use of magic
+SHIFT_FRAME 5
+shl rcx , 3
+  ;clean stack if there is difference of args. rcx = 4+args rcx *8
+add rsp,rcx
+mov rbp, r8
+ jmp rbx
+leave
+ret
+Lcont140715211951192:
+CLOSURE_ENV rbx, rax
+push rbx
+CLOSURE_CODE rbx, rax
+call rbx
+add rsp, 8*1 ; pop env
+pop rbx ; pop arg count
+shl rbx, 3 ; rbx = rbx * 8
+add rsp , rbx; pop args
+mov qword [ fvar_tbl + 384], rax
+mov rax, SOB_VOID_ADDRESS
+
+	call write_sob_if_not_void
+
+mov rax, const_tbl+204
+push rax
+mov rax, const_tbl+102
+push rax
+mov rax, const_tbl+85
+push rax
+mov rax, const_tbl+51
+push rax
+mov rax, qword [ fvar_tbl + 328]
+push rax
+push 5
+mov rax, qword [ fvar_tbl + 208]
 CLOSURE_ENV rbx, rax
 push rbx
 CLOSURE_CODE rbx, rax
@@ -346,6 +5185,31 @@ div:
          mov PVAR(1), rax
          pop rbp
          jmp mul
+	  mov rax, rcx
+	  mov rdi, rsi
+          .gcd_loop:
+     and rdi, rdi
+     jz .end_gcd_loop
+     cqo
+     idiv rdi
+     mov rax, rdi
+     mov rdi, rdx
+     jmp .gcd_loop	
+     .end_gcd_loop:
+	  mov rdi, rax
+	  mov rax, rsi
+	  cqo
+	  idiv rdi
+	  mov rsi, rax
+	  mov rax, rcx
+	  cqo
+	  idiv rdi
+	  mov rcx, rax
+          cmp rcx, 0
+          jge .make_rat
+          imul rsi, -1
+          imul rcx, -1
+          .make_rat:
           MAKE_RATIONAL(rax, rsi, rcx)
           .op_return:
          pop rbp
@@ -374,6 +5238,31 @@ mul:
 	  NUMERATOR rdi, rdi
           imul rsi, rdi
 	 imul rcx, rdx
+	  mov rax, rcx
+	  mov rdi, rsi
+          .gcd_loop:
+     and rdi, rdi
+     jz .end_gcd_loop
+     cqo
+     idiv rdi
+     mov rax, rdi
+     mov rdi, rdx
+     jmp .gcd_loop	
+     .end_gcd_loop:
+	  mov rdi, rax
+	  mov rax, rsi
+	  cqo
+	  idiv rdi
+	  mov rsi, rax
+	  mov rax, rcx
+	  cqo
+	  idiv rdi
+	  mov rcx, rax
+          cmp rcx, 0
+          jge .make_rat
+          imul rsi, -1
+          imul rcx, -1
+          .make_rat:
           MAKE_RATIONAL(rax, rsi, rcx)
           .op_return:
          pop rbp
@@ -404,6 +5293,31 @@ add:
 	 imul rdi, rcx
 	 add rsi, rdi
 	 imul rcx, rdx
+	  mov rax, rcx
+	  mov rdi, rsi
+          .gcd_loop:
+     and rdi, rdi
+     jz .end_gcd_loop
+     cqo
+     idiv rdi
+     mov rax, rdi
+     mov rdi, rdx
+     jmp .gcd_loop	
+     .end_gcd_loop:
+	  mov rdi, rax
+	  mov rax, rsi
+	  cqo
+	  idiv rdi
+	  mov rsi, rax
+	  mov rax, rcx
+	  cqo
+	  idiv rdi
+	  mov rcx, rax
+          cmp rcx, 0
+          jge .make_rat
+          imul rsi, -1
+          imul rcx, -1
+          .make_rat:
           MAKE_RATIONAL(rax, rsi, rcx)
           .op_return:
          pop rbp
@@ -452,7 +5366,9 @@ lt:
 	 movq xmm0, rsi
 	 FLOAT_VAL rdi, rdi
 	 movq xmm1, rdi
-	 ucomisd xmm0, xmm1
+	 cmpltpd xmm0, xmm1
+         movq rsi, xmm0
+         cmp rsi, 0
              jmp .op_return
           .lt_rat:
              DENOMINATOR rcx, rsi
@@ -631,16 +5547,20 @@ gcd:
 	xor rdx, rdx
 	 NUMERATOR rax, rsi
          NUMERATOR rdi, rdi
-       .loop:
-	 and rdi, rdi
-	 jz .end_loop
-	 xor rdx, rdx 
-	 div rdi
-	 mov rax, rdi
-	 mov rdi, rdx
-	 jmp .loop	
-       .end_loop:
+         .gcd_loop:
+     and rdi, rdi
+     jz .end_gcd_loop
+     cqo
+     idiv rdi
+     mov rax, rdi
+     mov rdi, rdx
+     jmp .gcd_loop	
+     .end_gcd_loop:
 	 mov rdx, rax
+         cmp rdx, 0
+         jge .make_result
+         neg rdx
+         .make_result:
          MAKE_RATIONAL(rax, rdx, 1)
          pop rbp
          ret
@@ -691,3 +5611,122 @@ set_cdr:
 
          pop rbp
          ret
+
+apply:
+       
+       mov rdx, rbp                 ;save old-rbp
+       a:
+       
+       push rbp
+       mov rbp, rsp 
+      
+       ;num of params , place of cell of list
+       mov r15,PARAM_COUNT     ;;including proc and params and variadic list cell
+       
+       
+       ;unwrap_VARIADIC_LIST
+       mov rax, PARAM_COUNT
+       add rax, 3                ;;the place of variadic list
+       
+       ;rdi = list
+       mov rdi, qword [rbp+ rax*WORD_SIZE]	
+       ;counter
+       mov r9,0                  ;;counter of the list size
+       
+ 
+ 
+       start_loop_variadic:
+   
+       cmp rdi, SOB_NIL_ADDRESS
+       je finish_loop_variadic	
+                     
+       CAR r8, rdi				      ;mov to r8 the CAR of list
+       push r8
+       CDR r8, rdi
+       mov rdi, r8
+       inc r9
+       jmp start_loop_variadic
+ 
+       finish_loop_variadic:
+ 
+       ;swap_upside_down all the variadic params
+       mov r10, 1               ;; init counter of tansformation
+       mov r11, rbp             ;; first 
+       sub r11, WORD_SIZE
+       mov r12, rsp             ;; last  = rsp == rbp - 8 * r4 == rbp - 8 * counter
+       
+ 
+ 
+       start_the_transfer:
+       mov r13, qword [r11]
+       mov r14, qword [r12]
+       mov qword [r11], r14
+       mov qword [r12], r13
+       add r10, 2              ;; we finish loop when r5 > r1 == (counter > NUM_PARAMS)
+       sub r11, WORD_SIZE
+       add r12, WORD_SIZE
+       
+       cmp r10, r9
+       jg finish_the_transfer
+       jmp start_the_transfer
+       
+       finish_the_transfer:
+       
+       ;;push params without proc
+       mov r15, PARAM_COUNT         ;;while r10 > 2 == while we didn't push all non list params without proc
+       mov r10, PARAM_COUNT
+       add r10, 2                   ;;first non list arg
+       shl r10, 3
+       mov r11, rbp                 ;; r6 = pointer to cell of first non list arg
+       add r11, r10
+       
+ 
+       label_loop_push_params_upside_down:
+       cmp r15, 2                 ;;while r10 > 2 == while we didn't push all non list params without proc
+       je finish_loop_push_params
+       push qword [r11]
+       sub r11, WORD_SIZE
+       dec r15
+       jmp label_loop_push_params_upside_down
+       finish_loop_push_params:
+       
+       push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
+       add r9, PARAM_COUNT
+
+
+
+
+       sub r9, 2               ;;sub from r4 the proc and list cells.
+       push r9                 ;push n args     push qword [rbp+ 3*WORD_SIZE]
+ 
+           ;push qword [rbp+ 2*WORD_SIZE]   ;env
+           
+           
+       
+ 
+       shifting_like_applic_tp:
+       mov rax, qword [rbp+ 4*WORD_SIZE]       ;proc
+       CLOSURE_ENV rbx, rax
+       push rbx
+       
+       push qword [rbp + 8 * 1] ; old ret addr
+ 
+       
+ 
+       CLOSURE_CODE rbx, rax
+       mov rcx,0
+       mov rcx, PARAM_COUNT
+       add rcx, 4
+       add r9,3
+       SHIFT_FRAME_REGISTER r9        ;r9 iterations
+       shl rcx , 3
+       add rsp,rcx
+       
+       
+       mov rbp, rdx                          ;old-rbp
+       f:
+       jmp rbx
+           
+       
+           ;pop rbp
+           ;ret

@@ -365,14 +365,12 @@ module Prims : PRIMS = struct
     
     
     (* %define PVAR(n) qword [rbp+(4+n)*WORD_SIZE] *)
- 
+    (* rbp = 0x7fffffffdc48 , 0x7fffffffdc48 = 0408ee0*)
     let self_apply = "apply:
        
-       mov rsi, qword [rbp]                 ;save old-rbp
-       mov rdx, qword [rbp +1*WORD_SIZE]    ;save old-ret
-       mov rdx, qword [rbp +2*WORD_SIZE]    ;save old-env
-
-
+       mov rdx, rbp                 ;save old-rbp
+       a:
+       
        push rbp
        mov rbp, rsp 
       
@@ -449,7 +447,7 @@ module Prims : PRIMS = struct
        push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
        add r9, PARAM_COUNT
 
-test_452:
+
 
 
        sub r9, 2               ;;sub from r4 the proc and list cells.
@@ -478,9 +476,9 @@ test_452:
        shl rcx , 3
        add rsp,rcx
        
-       ;mov qword [rsp + 0*WORD_SIZE] , rdx    ;old-ret
-       mov rbp, rsi                          ;old-rbp
-       finish_apply:
+       
+       mov rbp, rdx                          ;old-rbp
+       f:
        jmp rbx
            
        
