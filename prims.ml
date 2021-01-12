@@ -368,7 +368,10 @@ module Prims : PRIMS = struct
  
     let self_apply = "apply:
        
-       mov rsi, qword [rbp]
+       mov rsi, qword [rbp]                 ;save old-rbp
+       mov rdx, qword [rbp +1*WORD_SIZE]    ;save old-ret
+       mov rdx, qword [rbp +2*WORD_SIZE]    ;save old-env
+
 
        push rbp
        mov rbp, rsp 
@@ -434,43 +437,50 @@ module Prims : PRIMS = struct
        add r11, r10
        
  
-       label_loop_push_params:
+       label_loop_push_params_upside_down:
        cmp r15, 2                 ;;while r10 > 2 == while we didn't push all non list params without proc
        je finish_loop_push_params
        push qword [r11]
        sub r11, WORD_SIZE
        dec r15
-       jmp label_loop_push_params
+       jmp label_loop_push_params_upside_down
        finish_loop_push_params:
        
        push_calculated_n:      ;;last n - 2 + r4 == last n - 1 (proc) - 1 (list) + list_size
        add r9, PARAM_COUNT
+
+test_452:
+
+
        sub r9, 2               ;;sub from r4 the proc and list cells.
        push r9                 ;push n args     push qword [rbp+ 3*WORD_SIZE]
  
            ;push qword [rbp+ 2*WORD_SIZE]   ;env
-           ;push qword [rbp+ 1*WORD_SIZE]   ;old-ret
-           ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+           
+           
        
  
        shifting_like_applic_tp:
        mov rax, qword [rbp+ 4*WORD_SIZE]       ;proc
        CLOSURE_ENV rbx, rax
        push rbx
+       
        push qword [rbp + 8 * 1] ; old ret addr
  
-       ;push qword [rbp+ 0*WORD_SIZE]   ;old-rbp
+       
  
        CLOSURE_CODE rbx, rax
        mov rcx,0
        mov rcx, PARAM_COUNT
        add rcx, 4
-       add r9,4
-       SHIFT_FRAME_REGISTER r9
+       add r9,3
+       SHIFT_FRAME_REGISTER r9        ;r9 iterations
        shl rcx , 3
        add rsp,rcx
        
-       mov rbp, rsi
+       ;mov qword [rsp + 0*WORD_SIZE] , rdx    ;old-ret
+       mov rbp, rsi                          ;old-rbp
+       finish_apply:
        jmp rbx
            
        

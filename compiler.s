@@ -218,7 +218,7 @@ pop rax
 		mov rdx, rbp
 		mov rsi, rbx
 		shl rsi, 3
-		sub rdx, rsi
+		sub rdx, rsi			;; rbp - i * WORD_SIZE
 		push qword [rdx]
 		pop  qword [rbp+ rax*WORD_SIZE]
 ; %assign i i+1
