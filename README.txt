@@ -1,5 +1,5 @@
-Izhak Moalem      205489230
-Yuval Kashi       206055964
+Izhak Moalem      
+Yuval Kashi       
 
 
 We assert that the work we submitted is 100% our own. We have not received any
